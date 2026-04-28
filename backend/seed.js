@@ -179,7 +179,7 @@ const seedData = async () => {
     
     // Tạo nhiều users hơn với các ngày đăng ký khác nhau
     const userNames = [
-      { name: 'Nguyễn Văn Admin', email: 'admin@example.com', role: 'admin' },
+      { name: 'Tiến Thành Store', email: 'admin@example.com', role: 'admin' },
       { name: 'Trần Thị Bình', email: 'user1@example.com', role: 'user' },
       { name: 'Lê Văn Cường', email: 'user2@example.com', role: 'user' },
       { name: 'Phạm Thị Dung', email: 'user3@example.com', role: 'user' },

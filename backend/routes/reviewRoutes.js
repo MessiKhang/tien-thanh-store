@@ -1,18 +1,20 @@
 const express = require("express");
 const {
-  getReviewsByProduct,
-  getReviewsByUser,
-  getAllReviews,
-  createReview,
-  updateReview,
-  deleteReview,
-  replyToReview,
-  adminDeleteReview,
-  toggleReviewVisibility,
+    getReviewsByProduct,
+    getReviewsByUser,
+    getAllReviews,
+    createReview,
+    updateReview,
+    deleteReview,
+    replyToReview,
+    adminDeleteReview,
+    toggleReviewVisibility,
+    updateReviewComment, // ← add this
 } = require("../controllers/reviewController");
+
 const {
-  authenticateToken,
-  requireAdmin,
+    authenticateToken,
+    requireAdmin,
 } = require("../controllers/authController");
 
 const router = express.Router();
@@ -30,7 +32,17 @@ router.delete("/:id", authenticateToken, deleteReview);
 router.get("/", authenticateToken, requireAdmin, getAllReviews);
 router.post("/:id/reply", authenticateToken, requireAdmin, replyToReview);
 router.delete("/:id/admin", authenticateToken, requireAdmin, adminDeleteReview);
-router.patch("/:id/visibility", authenticateToken, requireAdmin, toggleReviewVisibility);
+router.patch(
+    "/:id/visibility",
+    authenticateToken,
+    requireAdmin,
+    toggleReviewVisibility,
+);
+router.put(
+    "/:id/comment",
+    authenticateToken,
+    requireAdmin,
+    updateReviewComment,
+); // ← add this
 
 module.exports = router;
-
