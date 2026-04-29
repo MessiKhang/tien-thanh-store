@@ -1,54 +1,48 @@
 const mongoose = require("mongoose");
 
 const reviewSchema = new mongoose.Schema(
-  {
-    productId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
-      required: true,
+    {
+        productId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Product",
+            required: true,
+        },
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
+        comment: {
+            type: String,
+            trim: true,
+            default: "",
+        },
+        images: {
+            type: [String],
+            default: [],
+        },
+        adminReply: {
+            text: {
+                type: String,
+                trim: true,
+                default: "",
+            },
+            repliedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+            },
+            repliedAt: {
+                type: Date,
+            },
+        },
+        isVisible: {
+            type: Boolean,
+            default: true,
+        },
     },
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+    {
+        timestamps: true,
     },
-    rating: {
-      type: Number,
-      default: 5,
-      min: 1,
-      max: 5,
-    },
-    comment: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-    images: {
-      type: [String],
-      default: [],
-    },
-    adminReply: {
-      text: {
-        type: String,
-        trim: true,
-        default: "",
-      },
-      repliedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-      repliedAt: {
-        type: Date,
-      },
-    },
-    isVisible: {
-      type: Boolean,
-      default: true,
-    },
-  },
-  {
-    timestamps: true,
-  }
 );
 
 // Indexes for fast lookup — NO unique constraint on productId+userId
@@ -59,4 +53,4 @@ reviewSchema.index({ createdAt: -1 });
 reviewSchema.index({ "adminReply.repliedAt": -1, createdAt: -1 });
 
 module.exports =
-  mongoose.models.Review || mongoose.model("Review", reviewSchema);
+    mongoose.models.Review || mongoose.model("Review", reviewSchema);

@@ -130,7 +130,6 @@ const createReview = async (req, res) => {
         const review = await Review.create({
             productId,
             userId,
-            rating: 5, // default, no star UI
             comment: comment.trim(),
             images: Array.isArray(images) ? images : [],
         });

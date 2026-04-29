@@ -15,7 +15,6 @@ export interface Review {
     name: string;
     email?: string;
   };
-  rating: number;
   comment: string;
   images: string[];
   adminReply?: {
@@ -82,7 +81,6 @@ export const getAllReviews = async (params?: {
 
 export const createReview = async (reviewData: {
   productId: string;
-  rating: number;
   comment?: string;
   images?: string[];
 }): Promise<ReviewResponse> => {

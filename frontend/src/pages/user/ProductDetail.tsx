@@ -298,8 +298,7 @@ await refreshCartCount(userId); // ← Cập nhật badge
     try {
       setSubmittingReview(true);
       await createReview({
-    productId: id,
-    rating: 5, // default rating
+      productId: id,
     comment: reviewForm.comment.trim(),
     });
       toast.success("Bình luận của bạn đã được gửi thành công!");
