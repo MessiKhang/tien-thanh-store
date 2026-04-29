@@ -14,7 +14,7 @@ const reviewSchema = new mongoose.Schema(
     },
     rating: {
       type: Number,
-      required: true,
+      default: 5,
       min: 1,
       max: 5,
     },
@@ -43,7 +43,7 @@ const reviewSchema = new mongoose.Schema(
     },
     isVisible: {
       type: Boolean,
-      default: true, // Admin có thể ẩn đánh giá
+      default: true,
     },
   },
   {
@@ -51,13 +51,12 @@ const reviewSchema = new mongoose.Schema(
   }
 );
 
-// Index để tìm kiếm nhanh
+// Indexes for fast lookup — NO unique constraint on productId+userId
 reviewSchema.index({ productId: 1, isVisible: 1 });
 reviewSchema.index({ userId: 1 });
 reviewSchema.index({ createdAt: -1 });
+// Sort: reviews with admin reply float to top, then by reply date desc
+reviewSchema.index({ "adminReply.repliedAt": -1, createdAt: -1 });
 
-// Đảm bảo mỗi user chỉ đánh giá 1 lần cho 1 sản phẩm
-reviewSchema.index({ productId: 1, userId: 1 }, { unique: true });
-
-module.exports = mongoose.model("Review", reviewSchema);
-
+module.exports =
+  mongoose.models.Review || mongoose.model("Review", reviewSchema);

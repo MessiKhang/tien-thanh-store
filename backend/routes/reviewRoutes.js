@@ -9,7 +9,7 @@ const {
     replyToReview,
     adminDeleteReview,
     toggleReviewVisibility,
-    updateReviewComment, // ← add this
+    updateReviewComment,
 } = require("../controllers/reviewController");
 
 const {
@@ -19,30 +19,20 @@ const {
 
 const router = express.Router();
 
-// Public routes
+// ===== PUBLIC =====
 router.get("/product/:productId", getReviewsByProduct);
 
-// User routes
+// ===== USER =====
 router.get("/user/my-reviews", authenticateToken, getReviewsByUser);
 router.post("/", authenticateToken, createReview);
 router.put("/:id", authenticateToken, updateReview);
 router.delete("/:id", authenticateToken, deleteReview);
 
-// Admin routes
+// ===== ADMIN =====
 router.get("/", authenticateToken, requireAdmin, getAllReviews);
 router.post("/:id/reply", authenticateToken, requireAdmin, replyToReview);
+router.put("/:id/comment", authenticateToken, requireAdmin, updateReviewComment);
 router.delete("/:id/admin", authenticateToken, requireAdmin, adminDeleteReview);
-router.patch(
-    "/:id/visibility",
-    authenticateToken,
-    requireAdmin,
-    toggleReviewVisibility,
-);
-router.put(
-    "/:id/comment",
-    authenticateToken,
-    requireAdmin,
-    updateReviewComment,
-); // ← add this
+router.patch("/:id/visibility", authenticateToken, requireAdmin, toggleReviewVisibility);
 
 module.exports = router;

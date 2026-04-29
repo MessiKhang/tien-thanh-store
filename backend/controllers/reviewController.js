@@ -2,15 +2,15 @@ const Review = require("../models/Review");
 const Product = require("../models/Product");
 
 // ===== GET REVIEWS BY PRODUCT =====
+// Sorted: reviews with admin reply first (by repliedAt desc), then unreplied (by createdAt desc)
 const getReviewsByProduct = async (req, res) => {
     try {
         const { productId } = req.params;
         const reviews = await Review.find({ productId, isVisible: true })
             .populate("userId", "name email")
             .populate("adminReply.repliedBy", "name")
-            .sort({ createdAt: -1 });
+            .sort({ productId: 1, createdAt: -1 });
 
-        // Tính rating trung bình
         const avgRating =
             reviews.length > 0
                 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
@@ -28,7 +28,7 @@ const getReviewsByProduct = async (req, res) => {
         console.error("getReviewsByProduct error:", error);
         res.status(500).json({
             success: false,
-            message: "Không thể lấy đánh giá",
+            message: "Không thể lấy bình luận",
             error: error.message,
         });
     }
@@ -50,21 +50,19 @@ const getReviewsByUser = async (req, res) => {
             .populate("adminReply.repliedBy", "name")
             .sort({ createdAt: -1 });
 
-        res.json({
-            success: true,
-            data: reviews,
-        });
+        res.json({ success: true, data: reviews });
     } catch (error) {
         console.error("getReviewsByUser error:", error);
         res.status(500).json({
             success: false,
-            message: "Không thể lấy đánh giá",
+            message: "Không thể lấy bình luận",
             error: error.message,
         });
     }
 };
 
 // ===== GET ALL REVIEWS (ADMIN) =====
+// Sorted: most recently replied first, then by createdAt desc
 const getAllReviews = async (req, res) => {
     try {
         const { productId, userId, isVisible } = req.query;
@@ -80,48 +78,46 @@ const getAllReviews = async (req, res) => {
             .populate("adminReply.repliedBy", "name")
             .sort({ createdAt: -1 });
 
-        res.json({
-            success: true,
-            data: reviews,
-        });
+        res.json({ success: true, data: reviews });
     } catch (error) {
         console.error("getAllReviews error:", error);
         res.status(500).json({
             success: false,
-            message: "Không thể lấy danh sách đánh giá",
+            message: "Không thể lấy danh sách bình luận",
             error: error.message,
         });
     }
 };
 
 // ===== CREATE REVIEW (USER) =====
+// Allows multiple reviews per user per product
 const createReview = async (req, res) => {
     try {
         const userId = req.user?._id?.toString();
         if (!userId) {
             return res.status(401).json({
                 success: false,
-                message: "Vui lòng đăng nhập để đánh giá",
+                message: "Vui lòng đăng nhập để bình luận",
             });
         }
 
-        const { productId, rating, comment, images } = req.body;
+        const { productId, comment, images } = req.body;
 
-        if (!productId || !rating) {
+        if (!productId) {
             return res.status(400).json({
                 success: false,
-                message: "Vui lòng nhập đầy đủ thông tin",
+                message: "Thiếu thông tin sản phẩm",
             });
         }
 
-        if (rating < 1 || rating > 5) {
+        if (!comment || !comment.trim()) {
             return res.status(400).json({
                 success: false,
-                message: "Đánh giá phải từ 1 đến 5 sao",
+                message: "Vui lòng nhập nội dung bình luận",
             });
         }
 
-        // Kiểm tra sản phẩm có tồn tại không
+        // Check product exists
         const product = await Product.findById(productId);
         if (!product) {
             return res.status(404).json({
@@ -130,20 +126,12 @@ const createReview = async (req, res) => {
             });
         }
 
-        // Kiểm tra đã đánh giá chưa
-        const existingReview = await Review.findOne({ productId, userId });
-        if (existingReview) {
-            return res.status(400).json({
-                success: false,
-                message: "Bạn đã đánh giá sản phẩm này rồi",
-            });
-        }
-
+        // Allow multiple reviews — no duplicate check
         const review = await Review.create({
             productId,
             userId,
-            rating: parseInt(rating),
-            comment: comment || "",
+            rating: 5, // default, no star UI
+            comment: comment.trim(),
             images: Array.isArray(images) ? images : [],
         });
 
@@ -153,20 +141,14 @@ const createReview = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: "Đánh giá thành công",
+            message: "Bình luận thành công",
             data: populatedReview,
         });
     } catch (error) {
         console.error("createReview error:", error);
-        if (error.code === 11000) {
-            return res.status(400).json({
-                success: false,
-                message: "Bạn đã đánh giá sản phẩm này rồi",
-            });
-        }
         res.status(500).json({
             success: false,
-            message: "Không thể tạo đánh giá",
+            message: "Không thể tạo bình luận",
             error: error.message,
         });
     }
@@ -184,55 +166,41 @@ const updateReview = async (req, res) => {
         }
 
         const { id } = req.params;
-        const { rating, comment, images } = req.body;
+        const { comment } = req.body;
 
         const review = await Review.findById(id);
         if (!review) {
             return res.status(404).json({
                 success: false,
-                message: "Không tìm thấy đánh giá",
+                message: "Không tìm thấy bình luận",
             });
         }
 
-        // Chỉ user tạo đánh giá mới được sửa
         if (review.userId.toString() !== userId) {
             return res.status(403).json({
                 success: false,
-                message: "Bạn không có quyền sửa đánh giá này",
+                message: "Bạn không có quyền sửa bình luận này",
             });
         }
 
-        const updateData = {};
-        if (rating !== undefined) {
-            if (rating < 1 || rating > 5) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Đánh giá phải từ 1 đến 5 sao",
-                });
-            }
-            updateData.rating = parseInt(rating);
-        }
-        if (comment !== undefined) updateData.comment = comment;
-        if (images !== undefined)
-            updateData.images = Array.isArray(images) ? images : [];
+        if (comment !== undefined) review.comment = comment;
+        await review.save();
 
-        const updatedReview = await Review.findByIdAndUpdate(id, updateData, {
-            new: true,
-        })
+        const updatedReview = await Review.findById(id)
             .populate("userId", "name email")
             .populate("productId", "name image")
             .populate("adminReply.repliedBy", "name");
 
         res.json({
             success: true,
-            message: "Cập nhật đánh giá thành công",
+            message: "Cập nhật bình luận thành công",
             data: updatedReview,
         });
     } catch (error) {
         console.error("updateReview error:", error);
         res.status(500).json({
             success: false,
-            message: "Không thể cập nhật đánh giá",
+            message: "Không thể cập nhật bình luận",
             error: error.message,
         });
     }
@@ -254,35 +222,31 @@ const deleteReview = async (req, res) => {
         if (!review) {
             return res.status(404).json({
                 success: false,
-                message: "Không tìm thấy đánh giá",
+                message: "Không tìm thấy bình luận",
             });
         }
 
-        // Chỉ user tạo đánh giá mới được xóa
         if (review.userId.toString() !== userId) {
             return res.status(403).json({
                 success: false,
-                message: "Bạn không có quyền xóa đánh giá này",
+                message: "Bạn không có quyền xóa bình luận này",
             });
         }
 
         await Review.findByIdAndDelete(id);
-
-        res.json({
-            success: true,
-            message: "Xóa đánh giá thành công",
-        });
+        res.json({ success: true, message: "Xóa bình luận thành công" });
     } catch (error) {
         console.error("deleteReview error:", error);
         res.status(500).json({
             success: false,
-            message: "Không thể xóa đánh giá",
+            message: "Không thể xóa bình luận",
             error: error.message,
         });
     }
 };
 
-// ===== ADMIN REPLY TO REVIEW =====
+// ===== ADMIN REPLY TO ANY REVIEW =====
+// Can reply to any comment, overwrites previous reply
 const replyToReview = async (req, res) => {
     try {
         const adminId = req.user?._id?.toString();
@@ -299,7 +263,7 @@ const replyToReview = async (req, res) => {
         if (!text || !text.trim()) {
             return res.status(400).json({
                 success: false,
-                message: "Vui lòng nhập nội dung trả lời",
+                message: "Vui lòng nhập nội dung phản hồi",
             });
         }
 
@@ -307,7 +271,7 @@ const replyToReview = async (req, res) => {
         if (!review) {
             return res.status(404).json({
                 success: false,
-                message: "Không tìm thấy đánh giá",
+                message: "Không tìm thấy bình luận",
             });
         }
 
@@ -326,14 +290,14 @@ const replyToReview = async (req, res) => {
 
         res.json({
             success: true,
-            message: "Trả lời đánh giá thành công",
+            message: "Phản hồi thành công",
             data: populatedReview,
         });
     } catch (error) {
         console.error("replyToReview error:", error);
         res.status(500).json({
             success: false,
-            message: "Không thể trả lời đánh giá",
+            message: "Không thể phản hồi bình luận",
             error: error.message,
         });
     }
@@ -347,18 +311,15 @@ const adminDeleteReview = async (req, res) => {
         if (!review) {
             return res.status(404).json({
                 success: false,
-                message: "Không tìm thấy đánh giá",
+                message: "Không tìm thấy bình luận",
             });
         }
-        res.json({
-            success: true,
-            message: "Xóa đánh giá thành công",
-        });
+        res.json({ success: true, message: "Xóa bình luận thành công" });
     } catch (error) {
         console.error("adminDeleteReview error:", error);
         res.status(500).json({
             success: false,
-            message: "Không thể xóa đánh giá",
+            message: "Không thể xóa bình luận",
             error: error.message,
         });
     }
@@ -372,7 +333,7 @@ const toggleReviewVisibility = async (req, res) => {
         if (!review) {
             return res.status(404).json({
                 success: false,
-                message: "Không tìm thấy đánh giá",
+                message: "Không tìm thấy bình luận",
             });
         }
 
@@ -382,19 +343,21 @@ const toggleReviewVisibility = async (req, res) => {
         res.json({
             success: true,
             message: review.isVisible
-                ? "Hiển thị đánh giá thành công"
-                : "Ẩn đánh giá thành công",
+                ? "Hiển thị bình luận thành công"
+                : "Ẩn bình luận thành công",
             data: review,
         });
     } catch (error) {
         console.error("toggleReviewVisibility error:", error);
         res.status(500).json({
             success: false,
-            message: "Không thể thay đổi trạng thái đánh giá",
+            message: "Không thể thay đổi trạng thái",
             error: error.message,
         });
     }
 };
+
+// ===== ADMIN EDIT OWN REPLY =====
 const updateReviewComment = async (req, res) => {
     try {
         const adminId = req.user?._id?.toString();
@@ -415,7 +378,7 @@ const updateReviewComment = async (req, res) => {
             });
         }
 
-        // Cập nhật phản hồi của admin, KHÔNG đụng comment khách
+        // Only update adminReply — never touch customer comment
         review.adminReply = {
             text: comment.trim(),
             repliedBy: adminId,
@@ -434,19 +397,6 @@ const updateReviewComment = async (req, res) => {
             message: "Cập nhật phản hồi thành công",
             data: populated,
         });
-
-        if (!review) {
-            return res.status(404).json({
-                success: false,
-                message: "Không tìm thấy bình luận",
-            });
-        }
-
-        res.json({
-            success: true,
-            message: "Cập nhật bình luận thành công",
-            data: review,
-        });
     } catch (error) {
         console.error("updateReviewComment error:", error);
         res.status(500).json({
@@ -456,6 +406,7 @@ const updateReviewComment = async (req, res) => {
         });
     }
 };
+
 module.exports = {
     getReviewsByProduct,
     getReviewsByUser,
@@ -466,5 +417,5 @@ module.exports = {
     replyToReview,
     adminDeleteReview,
     toggleReviewVisibility,
-    updateReviewComment, // ← thêm dòng này
+    updateReviewComment,
 };

@@ -7,7 +7,6 @@ import "../user/css/style.css";
 import ProductCard from "../../components/ProductCard";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
-import { upsertStoredCartItem } from "../../services/cartStorage";
 import {
   getReviewsByProduct,
   createReview,
@@ -105,15 +104,13 @@ const ProductDetail = () => {
 
   // Review states
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [reviewStats, setReviewStats] = useState<{
-    averageRating: number;
-    totalReviews: number;
-    ratingDistribution: { [key: number]: number };
-  }>({
-    averageRating: 0,
-    totalReviews: 0,
-    ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
-  });
+      const [reviewStats, setReviewStats] = useState<{
+        averageRating: number;
+        totalReviews: number;
+      }>({
+        averageRating: 0,
+        totalReviews: 0,
+      });
   const [reviewLoading, setReviewLoading] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
 const [reviewForm, setReviewForm] = useState({
@@ -275,18 +272,11 @@ await refreshCartCount(userId); // ← Cập nhật badge
       const avgRating = parseFloat(res.data.averageRating || "0");
       const total = res.data.totalReviews || 0;
 
-      // Tính phân bố rating
-      const distribution: { [key: number]: number } = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-      reviewsData.forEach((review) => {
-        distribution[review.rating as keyof typeof distribution]++;
-      });
-
       setReviews(reviewsData);
-      setReviewStats({
-        averageRating: avgRating,
-        totalReviews: total,
-        ratingDistribution: distribution,
-      });
+            setReviewStats({
+              averageRating: avgRating,
+              totalReviews: total,
+            });
     } catch (error) {
       console.error("Lỗi lấy bình luận:", error);
     } finally {
