@@ -429,7 +429,7 @@ const ProductList: React.FC = () => {
                   <ProductCard
                     key={product._id}
                     product={product}
-                    onAddToCart={handleAddToCart}
+                    // onAddToCart={handleAddToCart}
                     toNumber={toNumber}
                     formatPrice={formatPrice}
                     calculateSalePercent={calculateSalePercent}

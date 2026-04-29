@@ -11,7 +11,7 @@ const Header: React.FC = () => {
     const [text, setText] = useState("");
     const [showUserMenu, setShowUserMenu] = useState(false);
     const navigate = useNavigate();
-    const { user, isAuth, logout } = useAuth();
+    const { user, isAuth, logout, cartCount } = useAuth();
     const menuRef = useRef<HTMLDivElement>(null);
 
     const handleSearch = (e: React.FormEvent) => {
@@ -46,19 +46,6 @@ const Header: React.FC = () => {
 
     return (
         <header className="main-header">
-            <div className="header-top">
-                <div className="contact-info">
-                    <span><i className="fa-solid fa-phone"></i> 19005360</span>
-                    <span><i className="fa-solid fa-envelope"></i> cskh@maytinhbienhoa.vn</span>
-                </div>
-
-                <div className="order-links">
-                    <Link to="/orders">
-                        <i className="fa-regular fa-clipboard"></i> Đơn hàng của tôi
-                    </Link>
-                </div>
-            </div>
-
             <div className="header-main">
                 <div className="logo">
                     <Link to="/home">
@@ -119,6 +106,11 @@ const Header: React.FC = () => {
                                         <div style={{ fontWeight: "600", marginBottom: "4px" }}>{user.name}</div>
                                         <div style={{ fontSize: "13px", color: "#666" }}>{user.email}</div>
                                     </div>
+                                    <div className="order-links">
+                                        <Link to="/orders">
+                                            <i className="fa-regular fa-clipboard"></i> Đơn hàng của tôi
+                                        </Link>
+                                    </div>
                                     <Link
                                         to="/profile"
                                         style={{
@@ -171,9 +163,35 @@ const Header: React.FC = () => {
                             <i className="fa-regular fa-user"></i>
                         </Link>
                     )}
-                    <Link to="/cart" title="Giỏ hàng">
+                    {/* <Link to="/cart" title="Giỏ hàng">
                         <i className="fa-solid fa-cart-shopping"></i>
-                    </Link>
+                    </Link> */}
+                    <Link to="/cart" title="Giỏ hàng" style={{ position: "relative" }}>
+    <i className="fa-solid fa-cart-shopping"></i>
+
+    {cartCount > 0 && (
+        <span
+            style={{
+                position: "absolute",
+                top: "-8px",
+                right: "-8px",
+                background: "#d90019",
+                color: "#fff",
+                borderRadius: "50%",
+                width: "18px",
+                height: "18px",
+                fontSize: "11px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 700,
+                lineHeight: 1,
+            }}
+        >
+            {cartCount > 99 ? "99+" : cartCount}
+        </span>
+    )}
+</Link>
                 </div>
             </div>
         </header>

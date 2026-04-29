@@ -579,7 +579,7 @@ const NewsManager: React.FC = () => {
                       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#d32f2f")}
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#f44336")}
                     >
-                      <i className="fa-solid fa-trash"></i> Xóa
+                      <i className="fa-solid fa-trash"></i> Ẩn
                     </button>
                   </td>
                 </tr>

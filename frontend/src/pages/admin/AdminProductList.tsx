@@ -280,7 +280,6 @@ const AdminProductList = () => {
                 <th>Thương hiệu</th>
                 <th>Màu sắc</th>
                 <th>Giá</th>
-                <th>Trạng thái</th>
                 <th>Hành động</th>
               </tr>
             </thead>
@@ -358,20 +357,6 @@ const AdminProductList = () => {
                         {Number(p.price).toLocaleString("vi-VN")}₫
                       </div>
                     )}
-                  </td>
-
-                  <td>
-                    <span 
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        backgroundColor: p.isActive !== false ? "#28a745" : "#dc3545",
-                        color: "white"
-                      }}
-                    >
-                      {p.isActive !== false ? "Hoạt động" : "Đã ẩn"}
-                    </span>
                   </td>
 
                   <td>

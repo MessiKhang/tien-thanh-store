@@ -47,7 +47,6 @@ const AdminLayout: React.FC = () => {
                         <i className="fa-solid fa-house"></i> Tổng quan
                     </Link>
 
-                    <span className="sidebar-section">Bán hàng</span>
 
                     <Link className="menu-link" to="/admin/orders">
                         <i className="fa-solid fa-box"></i> Đơn hàng
@@ -80,26 +79,18 @@ const AdminLayout: React.FC = () => {
                         </div>
                     )}
 
-                    <span className="sidebar-section">Khách hàng</span>
                     <Link className="menu-link" to="/admin/customers">
                         <i className="fa-solid fa-user-group"></i> Khách hàng
                     </Link>
 
-                    <span className="sidebar-section">Nội dung</span>
-                    <Link className="menu-link" to="/admin/news">
+                    {/* <Link className="menu-link" to="/admin/news">
                         <i className="fa-solid fa-newspaper"></i> Tin tức
                     </Link>
                     <Link className="menu-link" to="/admin/banners">
                         <i className="fa-solid fa-image"></i> Banner
-                    </Link>
+                    </Link> */}
                     <Link className="menu-link" to="/admin/reviews">
-                        <i className="fa-solid fa-star"></i> Đánh giá
-                    </Link>
-
-                    <span className="sidebar-section">Hệ thống</span>
-
-                    <Link className="menu-link" to="/">
-                        <i className="fa-solid fa-arrow-right-arrow-left"></i> Trở về trang web
+                        <i className="fa-solid fa-star"></i> Bình luận
                     </Link>
                 </nav>
             </aside>

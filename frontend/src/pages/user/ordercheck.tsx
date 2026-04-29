@@ -5,7 +5,6 @@ import "../user/css/orders-detail.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { useAuth } from "../../context/AuthContext";
 import {
-  confirmOrderReceived,
   getOrderDetail,
   cancelOrder,
   type Order,
@@ -39,7 +38,6 @@ const OrderCheck: React.FC = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState<Order | null>(null);
   const [fetching, setFetching] = useState(true);
-  const [confirming, setConfirming] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
   const loadDetail = useCallback(async () => {
@@ -71,21 +69,7 @@ const OrderCheck: React.FC = () => {
     loadDetail();
   }, [loading, isAuth, user, orderId, navigate, loadDetail]);
 
-  const handleConfirm = async () => {
-    if (!orderId) return;
-    try {
-      setConfirming(true);
-      await confirmOrderReceived(orderId);
-      toast.success("Cảm ơn bạn đã xác nhận!");
-      loadDetail();
-    } catch (error) {
-      console.error("confirmOrderReceived error:", error);
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Không thể xác nhận.");
-    } finally {
-      setConfirming(false);
-    }
-  };
+  
 
   const handleCancel = async () => {
     if (!orderId) return;
@@ -273,15 +257,6 @@ const OrderCheck: React.FC = () => {
             disabled={cancelling}
           >
             {cancelling ? "Đang hủy..." : "Hủy đơn"}
-          </button>
-        )}
-        {order.status === "delivered" && (
-          <button
-            className="order-receive-btn"
-            onClick={handleConfirm}
-            disabled={confirming}
-          >
-            {confirming ? "Đang xác nhận..." : "Đã nhận hàng"}
           </button>
         )}
       </div>

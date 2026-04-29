@@ -4,12 +4,12 @@ import {
   getAllReviews,
   replyToReview,
   adminDeleteReview,
+  adminUpdateReview,
   toggleReviewVisibility,
   type Review,
 } from "../../services/reviewService";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./css/admin-reviews.css";
-
 const AdminReviews: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,6 +17,8 @@ const AdminReviews: React.FC = () => {
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replying, setReplying] = useState(false);
+  const [editText, setEditText] = useState("");
+const [isEditing, setIsEditing] = useState(false);
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -49,32 +51,61 @@ const AdminReviews: React.FC = () => {
     try {
       setReplying(true);
       await replyToReview(reviewId, replyText);
-      toast.success("Trả lời đánh giá thành công!");
+      toast.success("Trả lời bình luận thành công!");
       setReplyText("");
       setSelectedReview(null);
       fetchReviews();
     } catch (error: unknown) {
       console.error("handleReply error:", error);
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Không thể trả lời đánh giá");
+      toast.error(err.response?.data?.message || "Không thể trả lời bình luận");
     } finally {
       setReplying(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa đánh giá này?")) return;
-    try {
-      await adminDeleteReview(id);
-      toast.success("Xóa đánh giá thành công!");
-      fetchReviews();
-    } catch (error: unknown) {
-      console.error("handleDelete error:", error);
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Không thể xóa đánh giá");
-    }
-  };
+      const handleDelete = async (id: string) => {
+        if (!window.confirm("Bạn có chắc chắn muốn xóa bình luận này?")) return;
+        try {
+          await adminDeleteReview(id);
+          toast.success("Xóa bình luận thành công!");
+          fetchReviews();
+        } catch (error: unknown) {
+          console.error("handleDelete error:", error);
+          const err = error as { response?: { data?: { message?: string } } };
+          toast.error(err.response?.data?.message || "Không thể xóa bình luận");
+        }
+      };
+    const handleEditComment = async (reviewId: string) => {
+      if (!editText.trim()) {
+        toast.error("Vui lòng nhập nội dung bình luận");
+        return;
+      }
 
+      try {
+        setReplying(true);
+
+        await adminUpdateReview(reviewId, editText.trim());
+
+        toast.success("Cập nhật bình luận thành công!");
+
+        setEditText("");
+        setSelectedReview(null);
+        setIsEditing(false);
+
+        fetchReviews();
+      } catch (error: unknown) {
+        const err = error as {
+          response?: { data?: { message?: string } };
+        };
+
+        toast.error(
+          err.response?.data?.message || "Không thể cập nhật bình luận"
+        );
+      } finally {
+        setReplying(false);
+      }
+    };
   const handleToggleVisibility = async (id: string) => {
     try {
       await toggleReviewVisibility(id);
@@ -115,7 +146,7 @@ const AdminReviews: React.FC = () => {
   return (
     <div className="admin-reviews-container">
       <div className="admin-reviews-header">
-        <h2>Quản lý đánh giá</h2>
+        <h2>Quản lý bình luận </h2>
         <div className="filter-tabs">
           <button
             className={`filter-tab ${filter === "all" ? "active" : ""}`}
@@ -171,17 +202,6 @@ const AdminReviews: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="review-rating">
-                  {[...Array(5)].map((_, i) => (
-                    <i
-                      key={i}
-                      className={`fa-star ${
-                        i < review.rating ? "fa-solid" : "fa-regular"
-                      }`}
-                      style={{ color: i < review.rating ? "#ffc107" : "#ddd" }}
-                    ></i>
-                  ))}
-                </div>
               </div>
 
               <div className="review-content">
@@ -210,39 +230,75 @@ const AdminReviews: React.FC = () => {
                 </div>
               )}
 
-              {selectedReview?._id === review._id ? (
-                <div className="reply-form">
-                  <textarea
-                    placeholder="Nhập phản hồi của bạn..."
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    rows={3}
-                  />
-                  <div className="reply-actions">
-                    <button
-                      className="btn-cancel"
-                      onClick={() => {
-                        setSelectedReview(null);
-                        setReplyText("");
-                      }}
-                    >
-                      Hủy
-                    </button>
-                    <button
-                      className="btn-submit"
-                      onClick={() => handleReply(review._id)}
-                      disabled={replying}
-                    >
-                      {replying ? "Đang gửi..." : "Gửi phản hồi"}
-                    </button>
+                {selectedReview?._id === review._id && isEditing ? (
+                  <div className="reply-form">
+                    <textarea
+                      placeholder="Chỉnh sửa phản hồi của Admin..."
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      rows={3}
+                    />
+
+                    <div className="reply-actions">
+                      <button
+                        className="btn-cancel"
+                        onClick={() => {
+                          setSelectedReview(null);
+                          setEditText("");
+                          setIsEditing(false);
+                        }}
+                      >
+                        Hủy
+                      </button>
+
+                      <button
+                        className="btn-submit"
+                        onClick={() => handleEditComment(review._id)}
+                        disabled={replying}
+                      >
+                        {replying ? "Đang lưu..." : "Lưu chỉnh sửa"}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ) : (
+                ) : selectedReview?._id === review._id && !isEditing ? (
+                  <div className="reply-form">
+                    <textarea
+                      placeholder="Nhập phản hồi của bạn..."
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      rows={3}
+                    />
+
+                    <div className="reply-actions">
+                      <button
+                        className="btn-cancel"
+                        onClick={() => {
+                          setSelectedReview(null);
+                          setReplyText("");
+                        }}
+                      >
+                        Hủy
+                      </button>
+
+                      <button
+                        className="btn-submit"
+                        onClick={() => handleReply(review._id)}
+                        disabled={replying}
+                      >
+                        {replying ? "Đang gửi..." : "Gửi phản hồi"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                 <div className="review-actions">
-                  {!review.adminReply?.text && (
+                {!review.adminReply?.text && (
                     <button
                       className="btn-reply"
-                      onClick={() => setSelectedReview(review)}
+                      onClick={() => {
+                        setSelectedReview(review);
+                        setIsEditing(false);
+                        setReplyText("");
+                      }}
                     >
                       <i className="fa-solid fa-reply"></i> Trả lời
                     </button>
@@ -254,12 +310,17 @@ const AdminReviews: React.FC = () => {
                     <i className={`fa-solid fa-eye${review.isVisible ? "-slash" : ""}`}></i>{" "}
                     {review.isVisible ? "Ẩn" : "Hiện"}
                   </button>
-                  <button
-                    className="btn-delete"
-                    onClick={() => handleDelete(review._id)}
-                  >
-                    <i className="fa-solid fa-trash"></i> Xóa
-                  </button>
+                    <button
+                    className="btn-edit"
+                    onClick={() => {
+                      setSelectedReview(review);
+                      setEditText(review.adminReply?.text || "");
+                      setReplyText("");   // xoá nội dung reply cũ
+                      setIsEditing(true);
+                  }}
+                    >
+                    <i className="fa-solid fa-pen"></i> Sửa
+                    </button>
                 </div>
               )}
             </div>

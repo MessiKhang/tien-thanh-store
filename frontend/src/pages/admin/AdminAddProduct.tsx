@@ -370,7 +370,7 @@ const AdminAddProduct: React.FC = () => {
             <option value="">-- Không có tag --</option>
             <option value="sale">Khuyến mãi</option>
             <option value="new">Mới nhất</option>
-            <option value="featured">Nổi bật</option>
+            <option value="featured">Gợi ý</option>
           </select>
           <small style={{ color: "#666", fontSize: "12px", display: "block", marginTop: "4px" }}>
             Chọn 1 tag để hiển thị sản phẩm trong các section tương ứng

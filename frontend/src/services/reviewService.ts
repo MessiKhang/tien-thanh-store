@@ -148,3 +148,14 @@ export const toggleReviewVisibility = async (
   return response.data;
 };
 
+export const adminUpdateReview = async (
+  id: string,
+  comment: string
+): Promise<ReviewResponse> => {
+  const response = await axios.put<ReviewResponse>(
+    `${API_URL}/${id}/comment`,
+    { comment },
+    { headers: authHeaders() }
+  );
+  return response.data;
+};

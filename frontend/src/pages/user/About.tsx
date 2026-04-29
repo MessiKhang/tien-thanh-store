@@ -40,50 +40,6 @@ const About: React.FC = () => {
                         </p>
                     </div>
                 </div>
-
-                {/* TẦM NHÌN & SỨ MỆNH */}
-                <div className="contact-info-wrap">
-                    <div className="contact-title">Tầm nhìn & Sứ mệnh</div>
-                    <div className="contact-description">
-                        <div style={{ marginBottom: "20px" }}>
-                            <p style={{ marginBottom: "8px", fontWeight: "600" }}>
-                                Tầm nhìn:
-                            </p>
-                            <p style={{ marginLeft: "20px", color: "#666", lineHeight: "1.6" }}>
-                                Trở thành hệ thống bán lẻ thiết bị công nghệ hàng đầu tại Việt Nam,
-                                mang đến giá trị bền vững cho khách hàng và cộng đồng.
-                            </p>
-                        </div>
-                        <div style={{ marginBottom: "20px" }}>
-                            <p style={{ marginBottom: "8px", fontWeight: "600" }}>
-                                Sứ mệnh:
-                            </p>
-                            <p style={{ marginLeft: "20px", color: "#666", lineHeight: "1.6" }}>
-                                Cung cấp sản phẩm chất lượng, dịch vụ chuyên nghiệp và giải pháp công nghệ tối ưu,
-                                giúp khách hàng dễ dàng tiếp cận thế giới số hóa hiện đại.
-                            </p>
-                        </div>
-                        <div>
-                            <p style={{ marginBottom: "8px", fontWeight: "600" }}>
-                                Giá trị cốt lõi:
-                            </p>
-                            <p style={{ marginLeft: "20px", color: "#666", lineHeight: "1.6" }}>
-                                Uy tín – Nhiệt huyết – Sáng tạo – Phát triển bền vững.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="contact-map" style={{ marginTop: "24px" }}>
-                        <iframe
-                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.3908713083186!2d106.70042321411607!3d10.776373392322237!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f195affeced%3A0xa12b7e9d15d3a6a9!2zQ8O0bmcgVHkgQ8O0bmcgTmdoaeG7h3AgSMOgIE3hu5ljLCBUaMOgbmggc-G7nywgUXXhuq1uIDEsIEjDoCBO4buZaSBDaMOtbmgsIFZpZXRuYW0!5e0!3m2!1svi!2s!4v1626248439051!5m2!1svi!2s"
-                            width="100%"
-                            height="200"
-                            style={{ border: 0, borderRadius: "8px" }}
-                            allowFullScreen
-                            loading="lazy"
-                        ></iframe>
-                    </div>
-                </div>
             </div>
         </div>
     );

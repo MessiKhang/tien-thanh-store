@@ -132,12 +132,6 @@ const OrderSuccess: React.FC = () => {
         </div>
 
         {/* Order Code */}
-        {order && !hasError && (
-          <div className="order-success-code-box">
-            <span className="order-success-code-label">Mã đơn hàng của bạn:</span>
-            <span className="order-success-code-value">#{order.code}</span>
-          </div>
-        )}
 
         {/* Action Buttons */}
         <div className="order-success-actions">
@@ -160,22 +154,6 @@ const OrderSuccess: React.FC = () => {
             </>
           ) : (
             <>
-              {order && (
-                <Link
-                  to={`/orders/${order._id}`}
-                  className="order-success-btn order-success-btn-primary"
-                >
-                  <i className="fa fa-file-invoice"></i>
-                  Xem chi tiết đơn hàng
-                </Link>
-              )}
-              <Link
-                to="/orders"
-                className="order-success-btn order-success-btn-secondary"
-              >
-                <i className="fa fa-box"></i>
-                Xem tất cả đơn hàng
-              </Link>
               <Link
                 to="/home"
                 className="order-success-btn order-success-btn-secondary"
@@ -188,15 +166,6 @@ const OrderSuccess: React.FC = () => {
         </div>
 
         {/* COD Notice */}
-        {order && order.paymentMethod === "cod" && !hasError && (
-          <div className="order-success-notice">
-            <strong>Lưu ý:</strong>
-            <p>
-              Nếu bạn chọn thanh toán khi nhận hàng, vui lòng chuẩn bị đúng số tiền khi nhận đơn hàng. 
-              Chúng tôi sẽ liên hệ với bạn qua số điện thoại đã cung cấp để xác nhận đơn hàng.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

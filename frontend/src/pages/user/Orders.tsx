@@ -5,7 +5,6 @@ import "../user/css/order.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { useAuth } from "../../context/AuthContext";
 import {
-  confirmOrderReceived,
   getOrdersByUser,
   cancelOrder,
   type Order,
@@ -39,7 +38,6 @@ const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeStatus, setActiveStatus] = useState<OrderStatus | "all">("all");
   const [fetching, setFetching] = useState(true);
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -71,27 +69,6 @@ const Orders: React.FC = () => {
     }
     return orders.filter((order) => order.status === activeStatus);
   }, [orders, activeStatus]);
-
-  const handleConfirm = async (orderId: string) => {
-    try {
-      setConfirmingId(orderId);
-      await confirmOrderReceived(orderId);
-      toast.success("Cảm ơn bạn đã xác nhận!");
-      setOrders((prev) =>
-        prev.map((order) =>
-          order._id === orderId
-            ? { ...order, status: "received" }
-            : order
-        )
-      );
-    } catch (error) {
-      console.error("confirm error:", error);
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Không thể xác nhận.");
-    } finally {
-      setConfirmingId(null);
-    }
-  };
 
   const handleCancel = async (orderId: string) => {
     if (!window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")) {
@@ -250,17 +227,7 @@ const Orders: React.FC = () => {
                 </button>
               )}
               {/* Ẩn nút hủy khi trạng thái là đang xử lí */}
-              {order.status === "delivered" && (
-                <button
-                  className="order-receive-btn"
-                  onClick={() => handleConfirm(order._id)}
-                  disabled={confirmingId === order._id}
-                >
-                  {confirmingId === order._id
-                    ? "Đang xác nhận..."
-                    : "Đã nhận hàng"}
-                </button>
-              )}
+              
             </div>
           </div>
         ))}

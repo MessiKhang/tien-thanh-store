@@ -22,14 +22,13 @@ const Home: React.FC = () => {
     const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [countdown, setCountdown] = useState("00 : 00 : 00");
 
     const saleSliderRef = useRef<HTMLDivElement>(null);
     const newestSliderRef = useRef<HTMLDivElement>(null);
     const featuredSliderRef = useRef<HTMLDivElement>(null);
 
-    // ❗ FIX LỖI: useRef phải đặt ngoài useEffect
-    const remainingTimeRef = useRef(24 * 60 * 60); // 24 giờ tính bằng giây
+    // // ❗ FIX LỖI: useRef phải đặt ngoài useEffect
+    // const remainingTimeRef = useRef(24 * 60 * 60); // 24 giờ tính bằng giây
 
     // ⚡ FIX HÀM CHUẨN HÓA Decimal128 → number
     const toNumber = (value: number | string | { $numberDecimal?: string } | undefined): number => {
@@ -107,26 +106,26 @@ const Home: React.FC = () => {
     };
 
     // ===== SLIDER + COUNTDOWN =====
-    useEffect(() => {
-        // Countdown
-        const timer = setInterval(() => {
-            const hours = Math.floor(remainingTimeRef.current / 3600);
-            const minutes = Math.floor((remainingTimeRef.current % 3600) / 60);
-            const seconds = remainingTimeRef.current % 60;
+    // useEffect(() => {
+    //     // Countdown
+    //     const timer = setInterval(() => {
+    //         const hours = Math.floor(remainingTimeRef.current / 3600);
+    //         const minutes = Math.floor((remainingTimeRef.current % 3600) / 60);
+    //         const seconds = remainingTimeRef.current % 60;
 
-            setCountdown(
-                `${hours.toString().padStart(2, "0")} : ${minutes
-                    .toString()
-                    .padStart(2, "0")} : ${seconds
-                        .toString()
-                        .padStart(2, "0")}`
-            );
+    //         setCountdown(
+    //             `${hours.toString().padStart(2, "0")} : ${minutes
+    //                 .toString()
+    //                 .padStart(2, "0")} : ${seconds
+    //                     .toString()
+    //                     .padStart(2, "0")}`
+    //         );
 
-            if (remainingTimeRef.current > 0) remainingTimeRef.current--;
-        }, 1000);
+    //         if (remainingTimeRef.current > 0) remainingTimeRef.current--;
+    //     }, 1000);
 
-        return () => clearInterval(timer);
-    }, []);
+    //     return () => clearInterval(timer);
+    // }, []);
 
     if (loading) {
         return (
@@ -155,7 +154,7 @@ const Home: React.FC = () => {
             <section className="promotion-slider">
                 <div className="slider-header">
                     <span>KHUYẾN MÃI HOT 🔥</span>
-                    <span className="timer">{countdown}</span>
+                    {/* <span className="timer">{countdown}</span> */}
                 </div>
                 <div className="slider-container">
                     <button
@@ -167,11 +166,12 @@ const Home: React.FC = () => {
 
                     <div className="slider-list" ref={saleSliderRef}>
                         {allProducts
-                            .filter((p) => {
-                                const salePercent = calculateSalePercent(p);
-                                return salePercent > 0;
-                            })
-                            .slice(0, 12)
+    .filter((p) => {
+        const salePercent = calculateSalePercent(p);
+        return salePercent > 0;
+    })
+    .sort((a, b) => calculateSalePercent(b) - calculateSalePercent(a))
+    .slice(0, 12)
                             .map((product) => (
                                 <ProductCard
                                     key={product._id}
@@ -231,7 +231,7 @@ const Home: React.FC = () => {
             {/* ===== SẢN PHẨM NỔI BẬT ===== */}
             <section className="promotion-slider">
                 <div className="slider-header">
-                    <span>SẢN PHẨM NỔI BẬT</span>
+                    <span>GỢI Ý CHO BẠN</span>
                 </div>
                 <div className="slider-container">
                     <button

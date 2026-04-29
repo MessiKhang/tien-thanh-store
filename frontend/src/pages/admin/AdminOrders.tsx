@@ -11,7 +11,7 @@ import "./css/admin-orders.css";
 // Các trạng thái admin có thể cập nhật (theo thứ tự)
 const ADMIN_UPDATABLE_STATUSES: { value: OrderStatus; label: string }[] = [
   { value: "processing", label: "Đang xử lý" },
-  { value: "handover_to_carrier", label: "Đã bàn giao vận chuyển" },
+  // { value: "handover_to_carrier", label: "Đã bàn giao vận chuyển" },
   { value: "shipping", label: "Đang giao" },
   { value: "delivered", label: "Đã giao" },
 ];
@@ -19,10 +19,10 @@ const ADMIN_UPDATABLE_STATUSES: { value: OrderStatus; label: string }[] = [
 const ALL_STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: "pending", label: "Chờ xác nhận" },
   { value: "processing", label: "Đang xử lý" },
-  { value: "handover_to_carrier", label: "Đã bàn giao vận chuyển" },
+  // { value: "handover_to_carrier", label: "Đã bàn giao vận chuyển" },
   { value: "shipping", label: "Đang giao" },
   { value: "delivered", label: "Đã giao" },
-  { value: "received", label: "Khách đã nhận" },
+  // { value: "received", label: "Khách đã nhận" },
   { value: "cancelled", label: "Đã huỷ" },
 ];
 
@@ -53,7 +53,7 @@ const AdminOrders: React.FC = () => {
     const passedStatuses = new Set(statusHistory.map(h => h.status));
     // Thêm trạng thái hiện tại vào danh sách đã đi qua
     passedStatuses.add(currentStatus);
-    
+
     // Nếu đã hủy hoặc đã nhận hàng, không cho cập nhật
     if (currentStatus === "cancelled" || currentStatus === "received") {
       return [];
@@ -180,46 +180,22 @@ const AdminOrders: React.FC = () => {
   const addressParts = (order?: Order) =>
     order
       ? [
-          order.shippingInfo.address,
-          order.shippingInfo.ward,
-          order.shippingInfo.district,
-          order.shippingInfo.city,
-        ]
-          .filter((part) => typeof part === "string" && part.trim().length > 0)
-          .join(", ")
+        order.shippingInfo.address,
+        order.shippingInfo.ward,
+        order.shippingInfo.district,
+        order.shippingInfo.city,
+      ]
+        .filter((part) => typeof part === "string" && part.trim().length > 0)
+        .join(", ")
       : "";
 
   return (
     <div className="admin-orders">
       <header className="admin-orders__header">
         <div>
-          <p className="admin-orders__subtitle">
-            Theo dõi và xử lý đơn hàng realtime
-          </p>
           <h1>Quản lý đơn hàng</h1>
         </div>
-        <div className="admin-orders__stat-cards">
-          <article>
-            <p>Tổng đơn</p>
-            <strong>{stats.total}</strong>
-          </article>
-          <article>
-            <p>Đang xử lý</p>
-            <strong>{stats.pending}</strong>
-          </article>
-          <article>
-            <p>Đang giao</p>
-            <strong>{stats.shipping}</strong>
-          </article>
-          <article>
-            <p>Hoàn tất</p>
-            <strong>{stats.completed}</strong>
-          </article>
-          <article>
-            <p>Huỷ</p>
-            <strong>{stats.cancelled}</strong>
-          </article>
-        </div>
+
       </header>
 
       <section className="admin-orders__filters">
@@ -302,19 +278,19 @@ const AdminOrders: React.FC = () => {
                       </td>
                       <td>
                         {new Date(order.createdAt).toLocaleString("vi-VN")}
-                      <button
-                        className="admin-orders__view-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedOrder(order);
-                          setStatusDraft(order.status);
-                          selectedOrderIdRef.current = order._id;
-                          setShowModal(true);
-                        }}
-                        title="Xem chi tiết đơn"
-                      >
-                        <i className="fa-regular fa-eye" />
-                      </button>
+                        <button
+                          className="admin-orders__view-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedOrder(order);
+                            setStatusDraft(order.status);
+                            selectedOrderIdRef.current = order._id;
+                            setShowModal(true);
+                          }}
+                          title="Xem chi tiết đơn"
+                        >
+                          <i className="fa-regular fa-eye" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -332,7 +308,7 @@ const AdminOrders: React.FC = () => {
             className="admin-orders__modal"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="admin-orders__modal-header">
+            {/* <div className="admin-orders__modal-header">
               <div>
                 <p>Đơn hàng</p>
                 <h3>#{selectedOrder.code}</h3>
@@ -404,12 +380,12 @@ const AdminOrders: React.FC = () => {
                   0
                 );
                 const calculatedSavings = calculatedOriginalTotal - calculatedTotal;
-                
+
                 // Sử dụng giá trị từ totals nếu có, nếu không thì tính lại
                 const subTotal = selectedOrder.totals.subTotal !== undefined ? selectedOrder.totals.subTotal : calculatedTotal;
                 const total = selectedOrder.totals.total !== undefined ? selectedOrder.totals.total : calculatedTotal;
                 const savings = selectedOrder.totals.savings !== undefined ? selectedOrder.totals.savings : calculatedSavings;
-                
+
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -443,60 +419,35 @@ const AdminOrders: React.FC = () => {
                   </div>
                 );
               })()}
-            </div>
+            </div> */}
 
             <div className="admin-orders__details-section">
               <h4>Trạng thái đơn</h4>
-              <select
-                value={statusDraft}
-                onChange={(e) =>
-                  setStatusDraft(e.target.value as OrderStatus)
-                }
-                disabled={updatingId === selectedOrder._id}
-              >
-                <option value={selectedOrder.status}>
-                  {ALL_STATUS_OPTIONS.find(s => s.value === selectedOrder.status)?.label || selectedOrder.status}
-                </option>
-                {getAvailableStatuses(selectedOrder).map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {getAvailableStatuses(selectedOrder).length === 0 && (
-                <p style={{ color: "#666", fontSize: "14px", marginTop: "8px" }}>
-                  Đơn hàng này không thể cập nhật trạng thái nữa.
-                </p>
-              )}
-            </div>
 
-            <div className="admin-orders__details-section">
-              <h4>Tiến trình</h4>
-              <ul className="admin-orders__timeline">
-                {selectedOrder.statusHistory.map((history, idx) => (
-                  <li
-                    key={`${history.status}-${idx}`}
-                    className={`admin-orders__timeline-item admin-orders__timeline-item--${
-                      STATUS_CLASS_MAP[history.status]
-                    }`}
-                  >
-                    <div className="admin-orders__timeline-dot" />
-                    <div className="admin-orders__timeline-content">
-                      <p>
-                        {
-                          ALL_STATUS_OPTIONS.find(
-                            (s) => s.value === history.status
-                          )?.label
-                        }
-                      </p>
-                      <span>
-                        {new Date(history.updatedAt).toLocaleString("vi-VN")}
-                      </span>
-                      {history.note && <small>{history.note}</small>}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <div className="admin-orders__filter-control">
+                <select
+                  value={statusDraft}
+                  onChange={(e) =>
+                    setStatusDraft(e.target.value as OrderStatus)
+                  }
+                  disabled={updatingId === selectedOrder._id}
+                >
+                  {ALL_STATUS_OPTIONS.map((option) => (
+                    <option
+                      key={option.value}
+                      value={option.value}
+                      disabled={
+                        option.value !== selectedOrder.status &&
+                        !getAvailableStatuses(selectedOrder).some(
+                          (s) => s.value === option.value
+                        )
+                      }
+                    >
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="admin-orders__modal-actions">
@@ -509,7 +460,7 @@ const AdminOrders: React.FC = () => {
               <button
                 className="admin-orders__btn-primary"
                 disabled={
-                  statusDraft === selectedOrder.status || 
+                  statusDraft === selectedOrder.status ||
                   updatingId === selectedOrder._id ||
                   getAvailableStatuses(selectedOrder).length === 0 ||
                   !getAvailableStatuses(selectedOrder).some(s => s.value === statusDraft)
@@ -531,4 +482,3 @@ const AdminOrders: React.FC = () => {
 };
 
 export default AdminOrders;
-  

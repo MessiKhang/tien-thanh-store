@@ -116,24 +116,6 @@
   transition: 0.2s;
 }
 
-.edit-btn {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.edit-btn:hover {
-  background: #fde68a;
-}
-
-.delete-btn {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.delete-btn:hover {
-  background: #fecaca;
-}
-
 /* Modal */
 .modal-overlay {
   position: fixed;

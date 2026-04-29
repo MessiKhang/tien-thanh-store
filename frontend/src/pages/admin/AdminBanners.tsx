@@ -339,7 +339,7 @@ const AdminBanners: React.FC = () => {
                     className="btn-delete"
                     onClick={() => handleDelete(banner._id)}
                   >
-                    <i className="fa-solid fa-trash"></i> Xóa
+                    <i className="fa-solid fa-trash"></i> Ẩn
                   </button>
                 </div>
               </div>

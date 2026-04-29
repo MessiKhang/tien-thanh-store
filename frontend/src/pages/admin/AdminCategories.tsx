@@ -267,7 +267,6 @@ const AdminCategories: React.FC = () => {
               <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "left", fontWeight: "600" }}>Slug</th>
               <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "left", fontWeight: "600" }}>Mô tả</th>
               <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "center", fontWeight: "600" }}>Thứ tự</th>
-              <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "center", fontWeight: "600" }}>Trạng thái</th>
               <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "center", fontWeight: "600" }}>Hành động</th>
             </tr>
           </thead>
@@ -298,20 +297,6 @@ const AdminCategories: React.FC = () => {
                       fontWeight: "600"
                     }}>
                       {category.sortOrder}
-                    </span>
-                  </td>
-                  <td style={{ padding: "12px", border: "1px solid #ddd", textAlign: "center" }}>
-                    <span
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        backgroundColor: category.isActive ? "#4CAF50" : "#f44336",
-                        color: "white",
-                        fontSize: "12px",
-                        fontWeight: "500",
-                      }}
-                    >
-                      {category.isActive ? "Hoạt động" : "Tạm khóa"}
                     </span>
                   </td>
                   <td style={{ padding: "12px", border: "1px solid #ddd", textAlign: "center" }}>
@@ -350,7 +335,7 @@ const AdminCategories: React.FC = () => {
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#d32f2f"}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#f44336"}
                     >
-                      <i className="fa-solid fa-trash"></i> Xóa
+                      <i className="fa-solid fa-trash"></i> Ẩn
                     </button>
                   </td>
                 </tr>

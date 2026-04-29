@@ -9,7 +9,7 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 const Footer: React.FC = () => {
     return (
         <>
-            <section className="newsletter">
+            {/* <section className="newsletter">
                 <div className="newsletter-inner">
                     <label htmlFor="newsletter-email">ĐĂNG KÍ NHẬN TIN KHUYẾN MÃI</label>
                     <div className="newsletter-form">
@@ -23,7 +23,7 @@ const Footer: React.FC = () => {
                         </Link>
                     </div>
                 </div>
-            </section>
+            </section> */}
             <footer className="main-footer">
                 <div className="footer-top">
                     <div className="footer-logo">

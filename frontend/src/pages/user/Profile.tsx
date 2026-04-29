@@ -233,12 +233,14 @@ const Profile: React.FC = () => {
                 </div>
               </div>
               <ul className="profile-status-pills">
-                {(Object.keys(stats.raw) as OrderStatus[]).map((key) => (
-                  <li key={key}>
-                    <span>{STATUS_LABELS[key]}</span>
-                    <b>{stats.raw[key]}</b>
-                  </li>
-                ))}
+                {(Object.keys(stats.raw) as OrderStatus[])
+                  .filter((key) => key !== "shipping" && key !== "delivered")
+                  .map((key) => (
+                    <li key={key}>
+                      <span>{STATUS_LABELS[key]}</span>
+                      <b>{stats.raw[key]}</b>
+                    </li>
+                  ))}
               </ul>
             </>
           )}

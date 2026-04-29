@@ -36,7 +36,7 @@ const Cart: React.FC = () => {
     const [usingLocalCart, setUsingLocalCart] = useState(false);
 
     const navigate = useNavigate();
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading: authLoading, refreshCartCount } = useAuth();
 
     const buildLocalCart = useCallback((): CartResponse => {
         const storedItems = getStoredCartItems();
@@ -83,6 +83,7 @@ const Cart: React.FC = () => {
             setUsingLocalCart(true);
         } finally {
             setLoading(false);
+            await refreshCartCount(user?.id);
         }
     }, [user?.id, buildLocalCart]);
 
@@ -91,6 +92,7 @@ const Cart: React.FC = () => {
         if (!user?.id) {
             updateStoredCartQuantity(productId, selectedColor || "", qty);
             setCart(buildLocalCart());
+            await refreshCartCount(undefined); // ← còn thiếu
             return;
         }
         try {
@@ -104,16 +106,20 @@ const Cart: React.FC = () => {
             });
             // Cập nhật local state thay vì fetch lại - tìm đúng item có cùng productId và selectedColor
             setCart((prev) => {
-                if (!prev?.items) return prev;
-                return {
-                    items: prev.items.map((item) =>
-                        item.productId._id === productId && 
-                        (item.selectedColor || "") === (selectedColor || "")
-                            ? { ...item, quantity: qty }
-                            : item
-                    ),
-                };
-            });
+    if (!prev?.items) return prev;
+
+    return {
+        items: prev.items.map((item) =>
+            item.productId._id === productId &&
+            (item.selectedColor || "") === (selectedColor || "")
+                ? { ...item, quantity: qty }
+                : item
+        ),
+    };
+});
+
+            await refreshCartCount(user?.id); // ← Cập nhật badge
+
         } catch (err) {
             console.error("Lỗi cập nhật số lượng:", err);
             toast.error("Không thể cập nhật số lượng.");
@@ -131,6 +137,7 @@ const Cart: React.FC = () => {
             if (!user?.id) {
                 removeStoredCartItem(productId, selectedColor || "");
                 setCart(buildLocalCart());
+                await refreshCartCount(undefined); // ← cập nhật badge guest
                 toast.success("Đã xoá sản phẩm khỏi giỏ hàng.");
                 return;
             }
@@ -145,13 +152,16 @@ const Cart: React.FC = () => {
                 if (!prev?.items) return prev;
                 return {
                     items: prev.items.filter(
-                        (item) => 
-                            !(item.productId._id === productId && 
-                              (item.selectedColor || "") === (selectedColor || ""))
+                    (item) =>
+                !(item.productId._id === productId &&
+                (item.selectedColor || "") === (selectedColor || ""))
                     ),
                 };
             });
-            toast.success("Đã xoá sản phẩm khỏi giỏ hàng.");
+
+            await refreshCartCount(user?.id); // ← cập nhật badge
+
+        toast.success("Đã xoá sản phẩm khỏi giỏ hàng.");
         } catch (err) {
             console.error("Lỗi xóa sản phẩm:", err);
             toast.error("Không thể xóa sản phẩm.");
@@ -246,7 +256,7 @@ const Cart: React.FC = () => {
                                             <div className="cart-product-color" style={{ fontSize: "13px", color: "#666", marginTop: "4px" }}>
                                                 Màu: {item.selectedColor}
                                             </div>
-                                        )}
+                                        )}  
                                         <div
                                             className="cart-product-remove"
                                             onClick={() => removeItem(product._id, item.selectedColor)}

@@ -87,7 +87,7 @@ const BannerSlider: React.FC = () => {
         />
       </div>
 
-      {/* Navigation dots */}
+      {/* Navigation dots
       {banners.length > 1 && (
         <div className="banner-dots">
           {banners.map((_, index) => (
@@ -99,7 +99,7 @@ const BannerSlider: React.FC = () => {
             />
           ))}
         </div>
-      )}
+      )} */}
 
       {/* Navigation arrows */}
       {banners.length > 1 && (

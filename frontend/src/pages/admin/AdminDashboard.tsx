@@ -129,20 +129,6 @@ const AdminDashboard: React.FC = () => {
           const month = selectedMonth.getMonth();
           start = new Date(year, month, 1);
           end = new Date(year, month + 1, 0, 23, 59, 59, 999);
-        } else if (timePeriod === "quarter" && selectedQuarter) {
-          const { year, quarter } = selectedQuarter;
-          const startMonth = (quarter - 1) * 3;
-          start = new Date(year, startMonth, 1);
-          end = new Date(year, startMonth + 3, 0, 23, 59, 59, 999);
-        } else if (timePeriod === "year" && selectedYear) {
-          const year = selectedYear.getFullYear();
-          start = new Date(year, 0, 1);
-          end = new Date(year, 11, 31, 23, 59, 59, 999);
-        } else if (timePeriod === "range" && startDateRange && endDateRange) {
-          start = new Date(startDateRange);
-          start.setHours(0, 0, 0, 0);
-          end = new Date(endDateRange);
-          end.setHours(23, 59, 59, 999);
         }
 
         if (start && end) {
@@ -254,11 +240,9 @@ const AdminDashboard: React.FC = () => {
       <div className="dashboard-header">
         <div>
           <h2>Dashboard</h2>
-          <p className="dashboard-subtitle">Tổng quan về hoạt động của cửa hàng</p>
         </div>
         <div className="date-filter">
           <div className="filter-group">
-            <label>Chu kỳ thời gian:</label>
             <select
               value={timePeriod}
               onChange={(e) => setTimePeriod(e.target.value)}
@@ -267,9 +251,6 @@ const AdminDashboard: React.FC = () => {
               <option value="day">Theo ngày</option>
               <option value="7days">7 ngày gần nhất</option>
               <option value="month">Theo tháng</option>
-              <option value="quarter">Theo quý</option>
-              <option value="year">Theo năm</option>
-              <option value="range">Khoảng thời gian</option>
             </select>
           </div>
           {timePeriod === "day" && (
@@ -368,9 +349,6 @@ const AdminDashboard: React.FC = () => {
           <button className="btn-apply" onClick={handleApplyFilter}>
             <i className="fa-solid fa-calendar"></i>
             Áp dụng
-          </button>
-          <button className="btn-reset" onClick={handleResetFilter}>
-            Đặt lại
           </button>
         </div>
       </div>
@@ -570,57 +548,6 @@ const AdminDashboard: React.FC = () => {
               </span>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Best Selling Products */}
-      <div className="dashboard-section">
-        <h3>Top 10 sản phẩm bán chạy</h3>
-        <div className="products-table-container">
-          <table className="products-table">
-            <thead>
-              <tr>
-                <th>Hình ảnh</th>
-                <th>Tên sản phẩm</th>
-                <th>Giá</th>
-                <th>Số lượng bán</th>
-                <th>Doanh thu</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.bestSellingProducts.length > 0 ? (
-                stats.bestSellingProducts.map((product) => (
-                  <tr key={product.productId}>
-                    <td>
-                      <img
-                        src={
-                          product.image?.startsWith("http")
-                            ? product.image
-                            : `http://localhost:5000/${product.image}`
-                        }
-                        alt={product.name}
-                        className="product-image"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            "http://localhost:5000/uploads/default-product.png";
-                        }}
-                      />
-                    </td>
-                    <td>{product.name}</td>
-                    <td>{formatCurrency(product.price)}</td>
-                    <td>{product.quantitySold}</td>
-                    <td>{formatCurrency(product.revenue)}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="no-data">
-                    Không có dữ liệu
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

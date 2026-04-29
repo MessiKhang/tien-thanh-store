@@ -8,24 +8,23 @@ import { getAllNews, type News } from "../../services/newsService";
 const PLACEHOLDER_IMG = "https://via.placeholder.com/460x460/fff3f4/ee4d2d?text=No+Image";
 
 const normalizeImageUrl = (src?: string) => {
-  if (!src) return PLACEHOLDER_IMG;
-  if (/^https?:\/\//i.test(src)) return src;
-  const cleanPath = src.replace(/^\/+/, "").replace(/\\/g, "/");
-  return `http://localhost:5000/${cleanPath}`;
+    if (!src) return PLACEHOLDER_IMG;
+    if (/^https?:\/\//i.test(src)) return src;
+    const cleanPath = src.replace(/^\/+/, "").replace(/\\/g, "/");
+    return `http://localhost:5000/${cleanPath}`;
 };
 
 const formatDate = (dateString?: string) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
 };
 
 const New: React.FC = () => {
     const [allNews, setAllNews] = useState<News[]>([]);
-    const [featuredNews, setFeaturedNews] = useState<News[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -35,10 +34,7 @@ const New: React.FC = () => {
                 // Lấy tất cả tin tức đang hoạt động
                 const activeNews = await getAllNews({ isActive: true });
                 setAllNews(activeNews);
-                
-                // Lấy tin tức nổi bật
-                const featured = await getAllNews({ isActive: true, isFeatured: true });
-                setFeaturedNews(featured);
+
             } catch (error) {
                 console.error("Lỗi khi lấy tin tức:", error);
             } finally {
@@ -81,8 +77,8 @@ const New: React.FC = () => {
                             {allNews.map((newsItem) => (
                                 <div key={newsItem._id} className="news-main-card">
                                     <Link to={`/news/${newsItem._id}`} className="news-main-img">
-                                        <img 
-                                            src={normalizeImageUrl(newsItem.image)} 
+                                        <img
+                                            src={normalizeImageUrl(newsItem.image)}
                                             alt={newsItem.title}
                                             onError={(e) => {
                                                 e.currentTarget.src = PLACEHOLDER_IMG;
@@ -103,35 +99,6 @@ const New: React.FC = () => {
                                             </div>
                                         )}
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Cột 2: Tin tức nổi bật */}
-                <div className="news-col news-col-hot">
-                    <h2 className="news-section-title">Tin tức nổi bật</h2>
-                    {featuredNews.length === 0 ? (
-                        <div style={{ padding: "20px", textAlign: "center", color: "#777" }}>
-                            <p>Chưa có tin tức nổi bật.</p>
-                        </div>
-                    ) : (
-                        <div className="news-hot-list">
-                            {featuredNews.slice(0, 5).map((newsItem) => (
-                                <div key={newsItem._id} className="news-hot-item">
-                                    <Link to={`/news/${newsItem._id}`} className="news-hot-img">
-                                        <img 
-                                            src={normalizeImageUrl(newsItem.image)} 
-                                            alt={newsItem.title}
-                                            onError={(e) => {
-                                                e.currentTarget.src = PLACEHOLDER_IMG;
-                                            }}
-                                        />
-                                    </Link>
-                                    <Link to={`/news/${newsItem._id}`} className="news-hot-title">
-                                        {newsItem.title}
-                                    </Link>
                                 </div>
                             ))}
                         </div>
