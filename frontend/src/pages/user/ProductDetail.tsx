@@ -283,7 +283,6 @@ await refreshCartCount(userId); // ← Cập nhật badge
       setReviewLoading(false);
     }
   }, [id]);
-
   const handleSubmitReview = async () => {
     if (!isAuth || !user?.id) {
       toast.error("Vui lòng đăng nhập để bình luận sản phẩm");

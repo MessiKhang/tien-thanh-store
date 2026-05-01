@@ -18,7 +18,6 @@ const Contact: React.FC = () => {
                     bạn. Hãy liên hệ để được hỗ trợ nhanh nhất!
                 </p>
             </div>
-
             <div className="contact-content">
                 {/* FORM */}
                 <div className="contact-form-wrap">

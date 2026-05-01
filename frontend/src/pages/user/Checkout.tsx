@@ -12,7 +12,6 @@ import {
   type ShippingInfo,
 } from "../../services/orderService";
 import { validateCoupon } from "../../services/couponService";
-
 type CartProduct = {
   _id: string;
   name: string;
@@ -37,7 +36,7 @@ const PAYMENT_OPTIONS = [
 ];
 
 const Checkout: React.FC = () => {
-  const { user, isAuth, loading: authLoading } = useAuth();
+  const { user, isAuth, loading: authLoading, refreshCartCount } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [cart, setCart] = useState<CartResponse | null>(null);
@@ -234,15 +233,15 @@ const Checkout: React.FC = () => {
           shippingFee,
           discount: appliedCoupon?.discount || 0,
           couponCode: appliedCoupon?.code || undefined,
-          items: cart.items.map((item: any) => ({
-            productId: item.productId._id,
-            name: item.name,
-            image: item.image,
-            price: item.price,
-            oldPrice: item.productId.oldPrice || item.price,
-            quantity: item.quantity,
-            selectedColor: item.selectedColor,
-          })),
+          items: cart.items.map((item: CartItem) => ({
+          productId: item.productId._id,
+          name: item.productId.name,
+          image: item.productId.image,
+          price: toNumber(item.productId.price),
+          oldPrice: toNumber(item.productId.oldPrice) || toNumber(item.productId.price),
+          quantity: item.quantity,
+          selectedColor: item.selectedColor || "",
+        })),
         };
 
         // Tạo payment URL từ MOMO (gửi orderData thay vì orderId)
@@ -250,6 +249,7 @@ const Checkout: React.FC = () => {
 
         if (momoResponse.success && momoResponse.payUrl) {
           // Redirect đến trang thanh toán MOMO
+          await refreshCartCount(user?.id);
           window.location.href = momoResponse.payUrl;
           return;
         } else {

@@ -79,7 +79,16 @@ const ProductList: React.FC = () => {
     }
     return 0;
   };
+const calculateSalePercent = (product: Product) => {
+  const price = toNumber(product.price);
+  const oldPrice = toNumber(product.oldPrice);
 
+  if (oldPrice > price && oldPrice > 0) {
+    return Math.round(((oldPrice - price) / oldPrice) * 100);
+  }
+
+  return product.salePercent || 0;
+};
   // Fetch categories and brands
   useEffect(() => {
     const fetchFilters = async () => {
@@ -200,7 +209,7 @@ const ProductList: React.FC = () => {
 
     return matchesName && matchesPrice && matchesBrand && matchesCategory;
   });
-
+// Sort products 
   // Sort products
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     const priceA = toNumber(a.price);
@@ -233,21 +242,11 @@ const ProductList: React.FC = () => {
   };
 
   // Format price
+
   const formatPrice = (price: number | string | { $numberDecimal?: string } | undefined): string => {
     return toNumber(price).toLocaleString("vi-VN") + "₫";
   };
 
-  // ⚡ HÀM FIX TÍNH % SALE CHÍNH XÁC 100%
-  const calculateSalePercent = (product: Product) => {
-    const price = toNumber(product.price);
-    const oldPrice = toNumber(product.oldPrice);
-
-    if (oldPrice > price && oldPrice > 0) {
-      return Math.round(((oldPrice - price) / oldPrice) * 100);
-    }
-
-    return product.salePercent || 0;
-  };
 
   return (
     <div className="contact-main">
