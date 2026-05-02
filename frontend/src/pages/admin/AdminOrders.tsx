@@ -8,10 +8,8 @@ import {
 } from "../../services/orderService";
 import "./css/admin-orders.css";
 
-// Các trạng thái admin có thể cập nhật (theo thứ tự)
 const ADMIN_UPDATABLE_STATUSES: { value: OrderStatus; label: string }[] = [
   { value: "processing", label: "Đang xử lý" },
-  // { value: "handover_to_carrier", label: "Đã bàn giao vận chuyển" },
   { value: "shipping", label: "Đang giao" },
   { value: "delivered", label: "Đã giao" },
 ];
@@ -19,21 +17,16 @@ const ADMIN_UPDATABLE_STATUSES: { value: OrderStatus; label: string }[] = [
 const ALL_STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: "pending", label: "Chờ xác nhận" },
   { value: "processing", label: "Đang xử lý" },
-  // { value: "handover_to_carrier", label: "Đã bàn giao vận chuyển" },
   { value: "shipping", label: "Đang giao" },
   { value: "delivered", label: "Đã giao" },
-  // { value: "received", label: "Khách đã nhận" },
   { value: "cancelled", label: "Đã huỷ" },
 ];
 
-const STATUS_CLASS_MAP: Record<OrderStatus, string> = {
-  pending: "warning",
-  processing: "warning",
-  handover_to_carrier: "info",
-  shipping: "info",
-  delivered: "success",
-  received: "success",
-  cancelled: "danger",
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cod: "Thanh toán khi nhận hàng (COD)",
+  momo: "Ví MoMo",
+  zalopay: "ZaloPay",
+  payoo: "Payoo",
 };
 
 const AdminOrders: React.FC = () => {
@@ -46,70 +39,43 @@ const AdminOrders: React.FC = () => {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const selectedOrderIdRef = useRef<string | null>(null);
 
-  // Lấy danh sách trạng thái có thể chọn dựa trên trạng thái hiện tại và lịch sử
   const getAvailableStatuses = (order: Order): { value: OrderStatus; label: string }[] => {
     const currentStatus = order.status;
-    const statusHistory = order.statusHistory || [];
-    const passedStatuses = new Set(statusHistory.map(h => h.status));
-    // Thêm trạng thái hiện tại vào danh sách đã đi qua
+    const passedStatuses = new Set((order.statusHistory || []).map((h) => h.status));
     passedStatuses.add(currentStatus);
 
-    // Nếu đã hủy hoặc đã nhận hàng, không cho cập nhật
-    if (currentStatus === "cancelled" || currentStatus === "received") {
-      return [];
-    }
-
-    // Nếu đang ở pending, chỉ cho chọn processing
+    if (currentStatus === "cancelled" || currentStatus === "received") return [];
     if (currentStatus === "pending") {
-      return ADMIN_UPDATABLE_STATUSES.filter(option => option.value === "processing");
+      return ADMIN_UPDATABLE_STATUSES.filter((o) => o.value === "processing");
     }
-
-    // Lấy các trạng thái admin có thể cập nhật (chưa đi qua)
-    const availableStatuses = ADMIN_UPDATABLE_STATUSES.filter(option => {
-      // Loại bỏ các trạng thái đã đi qua
-      if (passedStatuses.has(option.value)) {
-        return false;
-      }
-      // Chỉ hiển thị các trạng thái tiếp theo trong chuỗi
-      const currentIndex = ADMIN_UPDATABLE_STATUSES.findIndex(s => s.value === currentStatus);
-      const optionIndex = ADMIN_UPDATABLE_STATUSES.findIndex(s => s.value === option.value);
-      // Chỉ cho phép chọn trạng thái tiếp theo
+    return ADMIN_UPDATABLE_STATUSES.filter((option) => {
+      if (passedStatuses.has(option.value)) return false;
+      const currentIndex = ADMIN_UPDATABLE_STATUSES.findIndex((s) => s.value === currentStatus);
+      const optionIndex = ADMIN_UPDATABLE_STATUSES.findIndex((s) => s.value === option.value);
       return optionIndex === currentIndex + 1;
     });
-
-    return availableStatuses;
   };
 
   const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
       const res = await getAllOrders(filter === "all" ? undefined : filter);
-      // Sắp xếp đơn hàng mới nhất lên đầu
-      const sortedOrders = [...res.data].sort((a, b) => {
-        const dateA = new Date(a.createdAt).getTime();
-        const dateB = new Date(b.createdAt).getTime();
-        return dateB - dateA; // Giảm dần (mới nhất lên đầu)
-      });
+      const sortedOrders = [...res.data].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
       setOrders(sortedOrders);
 
       const prevId = selectedOrderIdRef.current;
-      let nextSelected: Order | null = null;
-      if (!sortedOrders.length) {
-        nextSelected = null;
-      } else if (prevId) {
-        nextSelected =
-          sortedOrders.find((o) => o._id === prevId) ?? sortedOrders[0];
-      } else {
-        nextSelected = sortedOrders[0];
-      }
+      const nextSelected = !sortedOrders.length
+        ? null
+        : prevId
+        ? sortedOrders.find((o) => o._id === prevId) ?? sortedOrders[0]
+        : sortedOrders[0];
 
       setSelectedOrder(nextSelected);
       selectedOrderIdRef.current = nextSelected?._id ?? null;
-      if (nextSelected) {
-        setStatusDraft(nextSelected.status);
-      } else {
-        setShowModal(false);
-      }
+      if (nextSelected) setStatusDraft(nextSelected.status);
+      else setShowModal(false);
     } catch (error) {
       console.error("getAllOrders error:", error);
       toast.error("Không thể tải danh sách đơn hàng.");
@@ -140,62 +106,43 @@ const AdminOrders: React.FC = () => {
     }
   };
 
-  const stats = useMemo(() => {
-    const base = {
-      total: orders.length,
-      pending: 0,
-      shipping: 0,
-      completed: 0,
-      cancelled: 0,
-    };
-
-    orders.forEach((order) => {
-      if (["pending", "processing"].includes(order.status)) base.pending++;
-      else if (["handover_to_carrier", "shipping"].includes(order.status))
-        base.shipping++;
-      else if (["delivered", "received"].includes(order.status))
-        base.completed++;
-      else if (order.status === "cancelled") base.cancelled++;
-    });
-
-    return base;
-  }, [orders]);
-
   const summary = useMemo(
     () =>
       ALL_STATUS_OPTIONS.reduce(
         (acc, cur) => ({
           ...acc,
-          [cur.value]: orders.filter((order) => order.status === cur.value)
-            .length,
+          [cur.value]: orders.filter((o) => o.status === cur.value).length,
         }),
         {} as Record<OrderStatus, number>
       ),
     [orders]
   );
 
-  const formatCurrency = (value: number) =>
-    value.toLocaleString("vi-VN") + "đ";
+  const formatCurrency = (value: number) => value.toLocaleString("vi-VN") + "đ";
 
   const addressParts = (order?: Order) =>
     order
       ? [
-        order.shippingInfo.address,
-        order.shippingInfo.ward,
-        order.shippingInfo.district,
-        order.shippingInfo.city,
-      ]
-        .filter((part) => typeof part === "string" && part.trim().length > 0)
-        .join(", ")
+          order.shippingInfo.address,
+          order.shippingInfo.ward,
+          order.shippingInfo.district,
+          order.shippingInfo.city,
+        ]
+          .filter((p) => typeof p === "string" && p.trim().length > 0)
+          .join(", ")
       : "";
+
+  const openModal = (order: Order) => {
+    setSelectedOrder(order);
+    setStatusDraft(order.status);
+    selectedOrderIdRef.current = order._id;
+    setShowModal(true);
+  };
 
   return (
     <div className="admin-orders">
       <header className="admin-orders__header">
-        <div>
-          <h1>Quản lý đơn hàng</h1>
-        </div>
-
+        <h1>Quản lý đơn hàng</h1>
       </header>
 
       <section className="admin-orders__filters">
@@ -226,9 +173,7 @@ const AdminOrders: React.FC = () => {
       {loading ? (
         <div className="admin-orders__empty">Đang tải đơn hàng...</div>
       ) : orders.length === 0 ? (
-        <div className="admin-orders__empty">
-          Không có đơn nào trong trạng thái hiện tại.
-        </div>
+        <div className="admin-orders__empty">Không có đơn nào trong trạng thái hiện tại.</div>
       ) : (
         <div className="admin-orders__content">
           <div className="admin-orders__table-card">
@@ -247,14 +192,12 @@ const AdminOrders: React.FC = () => {
                   {orders.map((order) => (
                     <tr
                       key={order._id}
-                      className={
-                        selectedOrder?._id === order._id ? "is-selected" : ""
-                      }
+                      className={selectedOrder?._id === order._id ? "is-selected" : ""}
                       onClick={() => {
+                        // Row click: only select/highlight, do NOT open modal
                         setSelectedOrder(order);
                         setStatusDraft(order.status);
                         selectedOrderIdRef.current = order._id;
-                        setShowModal(true);
                       }}
                     >
                       <td>#{order.code}</td>
@@ -266,14 +209,8 @@ const AdminOrders: React.FC = () => {
                       </td>
                       <td>{formatCurrency(order.totals.grandTotal)}</td>
                       <td>
-                        <span
-                          className={`admin-orders__status-badge admin-orders__status-badge--${order.status}`}
-                        >
-                          {
-                            ALL_STATUS_OPTIONS.find(
-                              (s) => s.value === order.status
-                            )?.label
-                          }
+                        <span className={`admin-orders__status-badge admin-orders__status-badge--${order.status}`}>
+                          {ALL_STATUS_OPTIONS.find((s) => s.value === order.status)?.label}
                         </span>
                       </td>
                       <td>
@@ -281,11 +218,8 @@ const AdminOrders: React.FC = () => {
                         <button
                           className="admin-orders__view-btn"
                           onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedOrder(order);
-                            setStatusDraft(order.status);
-                            selectedOrderIdRef.current = order._id;
-                            setShowModal(true);
+                            e.stopPropagation(); // prevent row click
+                            openModal(order);    // only eye opens modal
                           }}
                           title="Xem chi tiết đơn"
                         >
@@ -298,38 +232,42 @@ const AdminOrders: React.FC = () => {
               </table>
             </div>
           </div>
-
         </div>
       )}
 
+      {/* ── ORDER DETAIL MODAL ── */}
       {showModal && selectedOrder && (
         <div className="admin-orders__modal-backdrop" onClick={() => setShowModal(false)}>
-          <div
-            className="admin-orders__modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* <div className="admin-orders__modal-header">
+          <div className="admin-orders__modal" onClick={(e) => e.stopPropagation()}>
+
+            {/* Header */}
+            <div className="admin-orders__modal-header">
               <div>
                 <p>Đơn hàng</p>
                 <h3>#{selectedOrder.code}</h3>
               </div>
-              <button
-                className="admin-orders__modal-close"
-                onClick={() => setShowModal(false)}
-              >
+              <button className="admin-orders__modal-close" onClick={() => setShowModal(false)}>
                 ×
               </button>
             </div>
 
+            {/* Customer info */}
             <div className="admin-orders__details-section">
               <h4>Thông tin khách hàng</h4>
-              <p>
-                <strong>{selectedOrder.shippingInfo.fullName}</strong>
-              </p>
+              <p><strong>{selectedOrder.shippingInfo.fullName}</strong></p>
               <p>{selectedOrder.shippingInfo.phone}</p>
+              {selectedOrder.shippingInfo.email && <p>{selectedOrder.shippingInfo.email}</p>}
               <p>{addressParts(selectedOrder)}</p>
+              <p>
+                <strong>Thanh toán:</strong>{" "}
+                {PAYMENT_METHOD_LABELS[selectedOrder.paymentMethod] ?? selectedOrder.paymentMethod}
+              </p>
+              {selectedOrder.shippingInfo.note && (
+                <p><strong>Ghi chú:</strong> {selectedOrder.shippingInfo.note}</p>
+              )}
             </div>
 
+            {/* Product list */}
             <div className="admin-orders__details-section">
               <h4>Sản phẩm ({selectedOrder.items.length})</h4>
               <ul>
@@ -339,97 +277,86 @@ const AdminOrders: React.FC = () => {
                   const hasSale = itemOldPrice > itemPrice && itemOldPrice > 0;
                   const itemTotal = itemPrice * item.quantity;
                   const itemOldTotal = hasSale ? itemOldPrice * item.quantity : itemTotal;
+
                   return (
-                    <li key={item.productId}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <span>
-                          {item.name} x {item.quantity}
-                        </span>
-                        {item.selectedColor && (
-                          <span style={{ fontSize: "12px", color: "#666" }}>
-                            Màu: {item.selectedColor}
-                          </span>
+                    <li
+                      key={item.productId}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        padding: "8px 0",
+                        borderBottom: "1px solid #f0f0f0",
+                      }}
+                    >
+                      <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                        {item.image && (
+                          <img
+                            src={item.image.startsWith("http") ? item.image : `http://localhost:5000/${item.image}`}
+                            alt={item.name}
+                            style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 6, border: "1px solid #eee" }}
+                          />
+                        )}
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 14 }}>{item.name}</div>
+                          {item.selectedColor && (
+                            <div style={{ fontSize: 12, color: "#666" }}>Màu: {item.selectedColor}</div>
+                          )}
+                          <div style={{ fontSize: 12, color: "#999" }}>x{item.quantity}</div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ color: "#d90019", fontWeight: 600 }}>{formatCurrency(itemTotal)}</div>
+                        {hasSale && (
+                          <div style={{ color: "#999", textDecoration: "line-through", fontSize: 12 }}>
+                            {formatCurrency(itemOldTotal)}
+                          </div>
                         )}
                       </div>
-                      {hasSale ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-end" }}>
-                          <b style={{ color: "#d90019" }}>{formatCurrency(itemTotal)}</b>
-                          <span style={{ color: "#999", textDecoration: "line-through", fontSize: "12px" }}>
-                            {formatCurrency(itemOldTotal)}
-                          </span>
-                        </div>
-                      ) : (
-                        <b style={{ color: "#d90019" }}>{formatCurrency(itemTotal)}</b>
-                      )}
                     </li>
                   );
                 })}
               </ul>
             </div>
 
+            {/* Payment breakdown */}
             <div className="admin-orders__details-section">
               <h4>Thanh toán</h4>
               {(() => {
-                // Tính toán lại từ items nếu totals không có (đơn hàng cũ)
-                const calculatedOriginalTotal = selectedOrder.items.reduce(
-                  (sum, item) => sum + (item.oldPrice || item.price) * item.quantity,
-                  0
+                const subTotal = selectedOrder.totals.subTotal ?? 0;
+                const total = selectedOrder.totals.total ?? 0;
+                const savings = selectedOrder.totals.savings ?? 0;
+                const row = (label: string, value: string, bold = false, color?: string) => (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: bold ? 700 : 400, fontSize: bold ? 15 : 14, paddingTop: bold ? 6 : 0, borderTop: bold ? "1px solid #eee" : "none" }}>
+                    <span>{label}</span>
+                    <span style={color ? { color } : {}}>{value}</span>
+                  </div>
                 );
-                const calculatedTotal = selectedOrder.items.reduce(
-                  (sum, item) => sum + item.price * item.quantity,
-                  0
-                );
-                const calculatedSavings = calculatedOriginalTotal - calculatedTotal;
-
-                // Sử dụng giá trị từ totals nếu có, nếu không thì tính lại
-                const subTotal = selectedOrder.totals.subTotal !== undefined ? selectedOrder.totals.subTotal : calculatedTotal;
-                const total = selectedOrder.totals.total !== undefined ? selectedOrder.totals.total : calculatedTotal;
-                const savings = selectedOrder.totals.savings !== undefined ? selectedOrder.totals.savings : calculatedSavings;
-
                 return (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span>Tạm tính:</span>
-                      <span>{formatCurrency(subTotal)}</span>
-                    </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {row("Tạm tính:", formatCurrency(subTotal))}
                     {savings > 0 && (
-                      <div style={{ display: "flex", justifyContent: "space-between", color: "#28a745" }}>
-                        <span>Tiết kiệm:</span>
-                        <span style={{ fontWeight: 600 }}>-{formatCurrency(savings)}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", color: "#28a745", fontSize: 14 }}>
+                        <span>Tiết kiệm:</span><span>-{formatCurrency(savings)}</span>
                       </div>
                     )}
-                    <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 600, paddingTop: "8px", borderTop: "1px solid #e0e0e0" }}>
-                      <span>Thành tiền:</span>
-                      <span style={{ color: "#d90019", fontWeight: 600 }}>{formatCurrency(total)}</span>
-                    </div>
-                    {selectedOrder.totals.discount > 0 && (
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>Giảm giá:</span>
-                        <span>-{formatCurrency(selectedOrder.totals.discount)}</span>
-                      </div>
-                    )}
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span>Phí vận chuyển:</span>
-                      <span>{formatCurrency(selectedOrder.totals.shippingFee)}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "16px", paddingTop: "8px", borderTop: "1px solid #e0e0e0" }}>
-                      <span>Tổng cộng:</span>
-                      <span style={{ color: "#d90019" }}>{formatCurrency(selectedOrder.totals.grandTotal)}</span>
-                    </div>
+                    {row("Thành tiền:", formatCurrency(total), true, "#d90019")}
+                    {selectedOrder.totals.discount > 0 &&
+                      row("Giảm giá (voucher):", `-${formatCurrency(selectedOrder.totals.discount)}`)}
+                    {row("Phí vận chuyển:", formatCurrency(selectedOrder.totals.shippingFee))}
+                    {row("Tổng cộng:", formatCurrency(selectedOrder.totals.grandTotal), true, "#d90019")}
                   </div>
                 );
               })()}
-            </div> */}
+            </div>
 
+            {/* Status update */}
             <div className="admin-orders__details-section">
               <h4>Trạng thái đơn</h4>
-
               <div className="admin-orders__filter-control">
                 <select
                   value={statusDraft}
-                  onChange={(e) =>
-                    setStatusDraft(e.target.value as OrderStatus)
-                  }
+                  onChange={(e) => setStatusDraft(e.target.value as OrderStatus)}
                   disabled={updatingId === selectedOrder._id}
                 >
                   {ALL_STATUS_OPTIONS.map((option) => (
@@ -438,9 +365,7 @@ const AdminOrders: React.FC = () => {
                       value={option.value}
                       disabled={
                         option.value !== selectedOrder.status &&
-                        !getAvailableStatuses(selectedOrder).some(
-                          (s) => s.value === option.value
-                        )
+                        !getAvailableStatuses(selectedOrder).some((s) => s.value === option.value)
                       }
                     >
                       {option.label}
@@ -450,11 +375,9 @@ const AdminOrders: React.FC = () => {
               </div>
             </div>
 
+            {/* Actions */}
             <div className="admin-orders__modal-actions">
-              <button
-                className="admin-orders__btn-secondary"
-                onClick={() => setShowModal(false)}
-              >
+              <button className="admin-orders__btn-secondary" onClick={() => setShowModal(false)}>
                 Đóng
               </button>
               <button
@@ -463,7 +386,7 @@ const AdminOrders: React.FC = () => {
                   statusDraft === selectedOrder.status ||
                   updatingId === selectedOrder._id ||
                   getAvailableStatuses(selectedOrder).length === 0 ||
-                  !getAvailableStatuses(selectedOrder).some(s => s.value === statusDraft)
+                  !getAvailableStatuses(selectedOrder).some((s) => s.value === statusDraft)
                 }
                 onClick={() => {
                   if (!selectedOrder) return;
@@ -474,11 +397,13 @@ const AdminOrders: React.FC = () => {
                 {updatingId === selectedOrder._id ? "Đang cập nhật..." : "Cập nhật"}
               </button>
             </div>
-          </div>
+
+          </div>{/* end admin-orders__modal */}
         </div>
       )}
+
     </div>
   );
 };
 
-export default AdminOrders;
+export default AdminOrders; 
