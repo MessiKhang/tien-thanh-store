@@ -335,35 +335,14 @@ const calculateSalePercent = (product: Product) => {
                 {searchTerm ? (
                   <>
                     <span>Kết quả tìm kiếm: "<strong>{searchTerm}</strong>" ({filteredProducts.length} sản phẩm)</span>
-                    <button
-                      onClick={handleClearSearch}
-                      style={{
-                        padding: "6px 12px",
-                        backgroundColor: "#f5f5f5",
-                        color: "#333",
-                        border: "1px solid #ddd",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontSize: "14px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        transition: "all 0.2s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#e8e8e8";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "#f5f5f5";
-                      }}
-                    >
-                      <i className="fa-solid fa-times"></i>
-                      Xóa tìm kiếm
-                    </button>
+                      <button onClick={handleClearSearch} className="ml-2 text-red-500">
+                        <i className="fa-solid fa-times"></i>
+                        Xóa tìm kiếm
+                      </button>
                   </>
-                ) : (
-                  <span>Tất cả sản phẩm <strong>({filteredProducts.length})</strong></span>
-                )}
+                ) : (priceFilter.length > 0 || brandFilter.length > 0 || categoryFilter.length > 0) ? (
+                    <span>Tìm thấy <strong>{filteredProducts.length}</strong> sản phẩm</span>
+                  ) : null}
               </div>
 
               <select

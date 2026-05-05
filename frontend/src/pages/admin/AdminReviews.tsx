@@ -21,28 +21,25 @@ type GroupedProduct = {
 const AdminReviews: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "visible" | "hidden">("all");
+
   const [replyingId, setReplyingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [editText, setEditText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchReviews = useCallback(async () => {
-    try {
-      setLoading(true);
-      const params: { isVisible?: boolean } = {};
-      if (filter === "visible") params.isVisible = true;
-      else if (filter === "hidden") params.isVisible = false;
-      const res = await getAllReviews(params);
-      setReviews(res.data);
-    } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Không thể tải danh sách bình luận");
-    } finally {
-      setLoading(false);
-    }
-  }, [filter]);
+const fetchReviews = useCallback(async () => {
+  try {
+    setLoading(true);
+    const res = await getAllReviews({});
+    setReviews(res.data);
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { message?: string } } };
+    toast.error(err.response?.data?.message || "Không thể tải danh sách bình luận");
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     fetchReviews();
@@ -126,28 +123,6 @@ const AdminReviews: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa bình luận này?")) return;
-    try {
-      await adminDeleteReview(id);
-      toast.success("Xóa bình luận thành công!");
-      fetchReviews();
-    } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Không thể xóa bình luận");
-    }
-  };
-
-  const handleToggleVisibility = async (id: string) => {
-    try {
-      await toggleReviewVisibility(id);
-      toast.success("Thay đổi trạng thái thành công!");
-      fetchReviews();
-    } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Không thể thay đổi trạng thái");
-    }
-  };
 
   if (loading) {
     return <div className="admin-reviews-container">Đang tải...</div>;
@@ -157,17 +132,6 @@ const AdminReviews: React.FC = () => {
     <div className="admin-reviews-container">
       <div className="admin-reviews-header">
         <h2>Quản lý bình luận</h2>
-        <div className="filter-tabs">
-          {(["all", "visible", "hidden"] as const).map((f) => (
-            <button
-              key={f}
-              className={`filter-tab ${filter === f ? "active" : ""}`}
-              onClick={() => setFilter(f)}
-            >
-              {f === "all" ? "Tất cả" : f === "visible" ? "Đang hiển thị" : "Đã ẩn"}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="admin-reviews-list">
@@ -202,7 +166,7 @@ const AdminReviews: React.FC = () => {
                 {group.reviews.map((review) => (
                   <div
                     key={review._id}
-                    className={`chat-item ${!review.isVisible ? "chat-item--hidden" : ""}`}
+                    className="chat-item"
                   >
                     {/* Customer Message */}
                     <div className="chat-message chat-message--customer">
@@ -215,39 +179,16 @@ const AdminReviews: React.FC = () => {
                           <span className="chat-time">
                             {new Date(review.createdAt).toLocaleString("vi-VN")}
                           </span>
-                          {!review.isVisible && (
-                            <span className="chat-hidden-badge">Đã ẩn</span>
-                          )}
                         </div>
                         <div className="chat-bubble chat-bubble--customer">
                           {review.comment || "Không có nội dung"}
                         </div>
                         {/* Action buttons */}
                         <div className="chat-actions">
-                          <button
-                            className="chat-action-btn chat-action-btn--reply"
-                            onClick={() => {
-                              setReplyingId(review._id);
-                              setEditingId(null);
-                              setReplyText("");
-                            }}
-                          >
-                            <i className="fa-solid fa-reply"></i> Trả lời
-                          </button>
-                          <button
-                            className={`chat-action-btn chat-action-btn--toggle`}
-                            onClick={() => handleToggleVisibility(review._id)}
-                          >
-                            <i className={`fa-solid fa-eye${review.isVisible ? "-slash" : ""}`}></i>
-                            {review.isVisible ? " Ẩn" : " Hiện"}
-                          </button>
-                          <button
-                            className="chat-action-btn chat-action-btn--delete"
-                            onClick={() => handleDelete(review._id)}
-                          >
-                            <i className="fa-solid fa-trash"></i> Xóa
-                          </button>
-                        </div>
+                            <button className="chat-action-btn chat-action-btn--reply" onClick={() => { setReplyingId(review._id); setEditingId(null); setReplyText(""); }}>
+                              <i className="fa-solid fa-reply"></i> Trả lời
+                            </button>
+                          </div>
                       </div>
                     </div>
 

@@ -1,22 +1,24 @@
-// server.js
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+
 const connectDB = require("./config/db");
 const Product = require("./models/Product");
 const cartRoutes = require("./routes/cartRoutes");
-const mongoose = require("mongoose");
 
 const app = express();
-
 // Bật CORS trước khi định nghĩa route để tránh bị lỗi
 app.use(
     cors({
-        origin: true, // tự động chấp nhận origin của request đến (React 3000, 3001,...)
+        origin: "http://localhost:3000",
         credentials: true,
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
     }),
 );
+
+app.options(/.*/, cors());
 
 app.use(express.json());
 
@@ -112,6 +114,7 @@ app.use("/api/news", require("./routes/newsRoutes"));
 app.use("/api/coupons", require("./routes/couponRoutes"));
 app.use("/api/reviews", require("./routes/reviewRoutes"));
 app.use("/api/banners", require("./routes/bannerRoutes"));
+app.use("/api/zalopay", require("./routes/zaloPayRoutes"));
 
 // API chính lấy sản phẩm (Lấy cả home và product chung)
 app.get("/api/products", async (req, res) => {

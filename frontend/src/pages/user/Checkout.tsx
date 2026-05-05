@@ -6,9 +6,11 @@ import logo from "../img/logo.png";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
 import { toast } from "sonner";
+
 import {
   createOrder,
   createMomoPayment,
+  createZaloPayPayment,
   type ShippingInfo,
 } from "../../services/orderService";
 import { validateCoupon } from "../../services/couponService";
@@ -33,6 +35,7 @@ type CartResponse = {
 const PAYMENT_OPTIONS = [
   { value: "cod", label: "Thanh toán khi giao hàng (COD)" },
   { value: "momo", label: "Thanh toán qua MOMO" },
+  { value: "zalopay", label: "Thanh toán qua ZaloPay" },
 ];
 
 const Checkout: React.FC = () => {
@@ -200,92 +203,158 @@ const Checkout: React.FC = () => {
     toast.success("Đã xóa mã giảm giá");
   };
 
-  const handlePlaceOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user?.id) return;
-    if (!cart?.items?.length) {
-      toast.error("Giỏ hàng trống, không thể đặt hàng.");
-      return;
-    }
-    if (!form.fullName || !form.phone || !form.address) {
-      toast.error("Vui lòng nhập đầy đủ thông tin giao hàng.");
-      return;
-    }
+const handlePlaceOrder = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    try {
-      setPlacing(true);
+  if (!user?.id) return;
 
-      // Nếu thanh toán MOMO
-      if (paymentMethod === "momo") {
-        // Kiểm tra grandTotal hợp lệ
-        const grandTotal = Number(totals.grandTotal);
-        if (!grandTotal || grandTotal <= 0 || isNaN(grandTotal)) {
-          toast.error("Số tiền thanh toán không hợp lệ. Vui lòng kiểm tra lại giỏ hàng.");
-          setPlacing(false);
-          return;
-        }
+  if (!cart?.items?.length) {
+    toast.error("Giỏ hàng trống, không thể đặt hàng.");
+    return;
+  }
 
-        // Chuẩn bị dữ liệu đơn hàng (KHÔNG tạo order ngay)
-        const orderData = {
-          userId: user.id,
-          shippingInfo: form,
-          paymentMethod: "momo",
-          shippingFee,
-          discount: appliedCoupon?.discount || 0,
-          couponCode: appliedCoupon?.code || undefined,
-          items: cart.items.map((item: CartItem) => ({
+  if (!form.fullName || !form.phone || !form.address) {
+    toast.error("Vui lòng nhập đầy đủ thông tin giao hàng.");
+    return;
+  }
+
+  try {
+    setPlacing(true);
+
+    // =========================
+    // MOMO PAYMENT
+    // =========================
+    if (paymentMethod === "momo") {
+      const grandTotal = Number(totals.grandTotal);
+
+      if (!grandTotal || grandTotal <= 0 || isNaN(grandTotal)) {
+        toast.error("Số tiền thanh toán không hợp lệ.");
+        setPlacing(false);
+        return;
+      }
+
+      const orderData = {
+        userId: user.id,
+        shippingInfo: form,
+        paymentMethod: "momo",
+        shippingFee,
+        discount: appliedCoupon?.discount || 0,
+        couponCode: appliedCoupon?.code || undefined,
+        items: cart.items.map((item: CartItem) => ({
           productId: item.productId._id,
           name: item.productId.name,
           image: item.productId.image,
           price: toNumber(item.productId.price),
-          oldPrice: toNumber(item.productId.oldPrice) || toNumber(item.productId.price),
+          oldPrice:
+            toNumber(item.productId.oldPrice) ||
+            toNumber(item.productId.price),
           quantity: item.quantity,
           selectedColor: item.selectedColor || "",
         })),
-        };
+      };
 
-        // Tạo payment URL từ MOMO (gửi orderData thay vì orderId)
-        const momoResponse = await createMomoPayment(grandTotal, orderData);
+      const momoResponse = await createMomoPayment(
+        grandTotal,
+        orderData
+      );
 
-        if (momoResponse.success && momoResponse.payUrl) {
-          // Redirect đến trang thanh toán MOMO
-          await refreshCartCount(user?.id);
-          window.location.href = momoResponse.payUrl;
-          return;
-        } else {
-          toast.error(momoResponse.message || "Không thể tạo link thanh toán MOMO");
-          setPlacing(false);
-          return;
-        }
+      if (momoResponse.success && momoResponse.payUrl) {
+        await refreshCartCount(user?.id);
+        window.location.href = momoResponse.payUrl;
+        return;
+      } else {
+        toast.error(
+          momoResponse.message ||
+            "Không thể tạo link thanh toán MOMO"
+        );
+        setPlacing(false);
+        return;
+      }
+    }
+
+    // =========================
+    // ZALOPAY PAYMENT
+    // =========================
+    if (paymentMethod === "zalopay") {
+      const grandTotal = Number(totals.grandTotal);
+
+      if (!grandTotal || grandTotal <= 0 || isNaN(grandTotal)) {
+        toast.error("Số tiền thanh toán không hợp lệ.");
+        setPlacing(false);
+        return;
       }
 
-      // Thanh toán COD
-      const response = await createOrder({
+      const orderData = {
         userId: user.id,
         shippingInfo: form,
-        paymentMethod,
+        paymentMethod: "zalopay",
         shippingFee,
-        couponCode: appliedCoupon?.code || undefined,
         discount: appliedCoupon?.discount || 0,
-      });
+        couponCode: appliedCoupon?.code || undefined,
+        items: cart.items.map((item: CartItem) => ({
+          productId: item.productId._id,
+          name: item.productId.name,
+          image: item.productId.image,
+          price: toNumber(item.productId.price),
+          oldPrice:
+            toNumber(item.productId.oldPrice) ||
+            toNumber(item.productId.price),
+          quantity: item.quantity,
+          selectedColor: item.selectedColor || "",
+        })),
+      };
 
-      toast.success("Đặt hàng thành công!");
-      navigate(`/order-success?orderId=${response.data._id}`);
-    } catch (error) {
-      console.error("placeOrder error:", error);
-      const err = error as { response?: { data?: { message?: string; success?: boolean } } };
-      const message =
-        err.response?.data?.message || "Không thể đặt hàng. Thử lại sau.";
-      toast.error(message);
-      
-      // Log chi tiết để debug
-      if (err.response?.data) {
-        console.error("Error details:", err.response.data);
+      const zaloResponse = await createZaloPayPayment(
+        grandTotal,
+        orderData
+      );
+
+      if (zaloResponse.success && zaloResponse.payUrl) {
+        await refreshCartCount(user?.id);
+        window.location.href = zaloResponse.payUrl;
+        return;
+      } else {
+        toast.error(
+          zaloResponse.message ||
+            "Không thể tạo link thanh toán ZaloPay"
+        );
+        setPlacing(false);
+        return;
       }
-    } finally {
-      setPlacing(false);
     }
-  };
+
+    // =========================
+    // COD PAYMENT
+    // =========================
+    const response = await createOrder({
+      userId: user.id,
+      shippingInfo: form,
+      paymentMethod: "cod",
+      shippingFee,
+      couponCode: appliedCoupon?.code || undefined,
+      discount: appliedCoupon?.discount || 0,
+    });
+
+    toast.success("Đặt hàng thành công!");
+
+    await refreshCartCount(user?.id);
+
+    navigate(`/order-success?orderId=${response.data._id}`);
+  } catch (error) {
+    console.error("placeOrder error:", error);
+
+    const err = error as {
+      response?: { data?: { message?: string } };
+    };
+
+    toast.error(
+      err.response?.data?.message ||
+        "Không thể đặt hàng. Vui lòng thử lại."
+    );
+  } finally {
+    setPlacing(false);
+  }
+};
 
   if (loading || authLoading) {
     return <div className="checkout-main">Đang tải dữ liệu...</div>;

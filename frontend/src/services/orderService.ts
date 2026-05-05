@@ -46,22 +46,22 @@ export interface CreateOrderPayload {
 }
 
 export interface OrderTotals {
-  subTotal: number; // Tạm tính (giá gốc)
-  total?: number; // Tổng tiền (giá giảm) - có thể không có trong đơn cũ
-  savings?: number; // Tiết kiệm - có thể không có trong đơn cũ
+  subTotal: number;
+  total?: number;
+  savings?: number;
   shippingFee: number;
   discount: number;
-  grandTotal: number; // Tổng cộng (giá giảm + ship - discount)
+  grandTotal: number;
 }
 
 export interface OrderItem {
   productId: string;
   name: string;
   image: string;
-  price: number; // Giá giảm (sau sale)
-  oldPrice?: number; // Giá gốc
+  price: number;
+  oldPrice?: number;
   quantity: number;
-  selectedColor?: string; // Màu sắc đã chọn
+  selectedColor?: string;
 }
 
 export interface Order {
@@ -146,6 +146,14 @@ export const updateOrderStatus = async (
   return response.data;
 };
 
+export const deleteOrder = async (orderId: string): Promise<{ success: boolean; message?: string }> => {
+  const response = await axios.delete<{ success: boolean; message?: string }>(
+    `${API_URL}/${orderId}`,
+    { headers: authHeaders() }
+  );
+  return response.data;
+};
+
 export const confirmOrderReceived = async (
   orderId: string
 ): Promise<OrderResponse> => {
@@ -175,6 +183,24 @@ export interface MomoPaymentResponse {
   message?: string;
 }
 
+export interface ZaloPaymentResponse {
+  success: boolean;
+  payUrl?: string;
+  appTransId?: string;
+  message?: string;
+}
+
+export const createZaloPayPayment = async (
+  total_zalopay: number,
+  orderData: any
+): Promise<ZaloPaymentResponse> => {
+  const response = await axios.post<ZaloPaymentResponse>(
+    "http://localhost:5000/api/zalopay/create",
+    { total_zalopay, orderData }
+  );
+  return response.data;
+};
+
 export const createMomoPayment = async (
   total_momo: number,
   orderData: any
@@ -185,4 +211,3 @@ export const createMomoPayment = async (
   );
   return response.data;
 };
-

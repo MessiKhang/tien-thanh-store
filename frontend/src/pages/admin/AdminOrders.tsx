@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   getAllOrders,
   updateOrderStatus,
+  deleteOrder,          // ← add this export to your orderService
   type Order,
   type OrderStatus,
 } from "../../services/orderService";
@@ -29,6 +30,9 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   payoo: "Payoo",
 };
 
+/** Orders that can be deleted by admin */
+const DELETABLE_STATUSES: OrderStatus[] = ["pending", "cancelled"];
+
 const AdminOrders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +41,7 @@ const AdminOrders: React.FC = () => {
   const [statusDraft, setStatusDraft] = useState<OrderStatus>("pending");
   const [showModal, setShowModal] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const selectedOrderIdRef = useRef<string | null>(null);
 
   const getAvailableStatuses = (order: Order): { value: OrderStatus; label: string }[] => {
@@ -66,11 +71,10 @@ const AdminOrders: React.FC = () => {
       setOrders(sortedOrders);
 
       const prevId = selectedOrderIdRef.current;
-      const nextSelected = !sortedOrders.length
-        ? null
-        : prevId
-        ? sortedOrders.find((o) => o._id === prevId) ?? sortedOrders[0]
-        : sortedOrders[0];
+      // Only restore a previously selected row — never auto-select the first row
+      const nextSelected = prevId
+        ? (sortedOrders.find((o) => o._id === prevId) ?? null)
+        : null;
 
       setSelectedOrder(nextSelected);
       selectedOrderIdRef.current = nextSelected?._id ?? null;
@@ -91,6 +95,7 @@ const AdminOrders: React.FC = () => {
     loadOrders();
   }, [loadOrders]);
 
+  // ── Status update ──────────────────────────────────────────────
   const handleStatusUpdate = async (orderId: string, status: OrderStatus) => {
     try {
       setUpdatingId(orderId);
@@ -106,17 +111,27 @@ const AdminOrders: React.FC = () => {
     }
   };
 
-  const summary = useMemo(
-    () =>
-      ALL_STATUS_OPTIONS.reduce(
-        (acc, cur) => ({
-          ...acc,
-          [cur.value]: orders.filter((o) => o.status === cur.value).length,
-        }),
-        {} as Record<OrderStatus, number>
-      ),
-    [orders]
-  );
+  // ── Delete order ───────────────────────────────────────────────
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!window.confirm("Bạn có chắc muốn xoá đơn hàng này không?")) return;
+    try {
+      setDeletingId(orderId);
+      await deleteOrder(orderId);
+      toast.success("Đã xoá đơn hàng.");
+      // If the deleted order was selected, clear selection
+      if (selectedOrderIdRef.current === orderId) {
+        selectedOrderIdRef.current = null;
+      }
+      loadOrders();
+    } catch (error) {
+      console.error("deleteOrder error:", error);
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Không thể xoá đơn hàng.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
 
   const formatCurrency = (value: number) => value.toLocaleString("vi-VN") + "đ";
 
@@ -137,6 +152,19 @@ const AdminOrders: React.FC = () => {
     setStatusDraft(order.status);
     selectedOrderIdRef.current = order._id;
     setShowModal(true);
+  };
+
+  // ── Row click: select + show inline status bar ─────────────────
+  const handleRowClick = (order: Order) => {
+    if (selectedOrder?._id === order._id) {
+      // Toggle off if clicking the already-selected row
+      setSelectedOrder(null);
+      selectedOrderIdRef.current = null;
+    } else {
+      setSelectedOrder(order);
+      setStatusDraft(order.status);
+      selectedOrderIdRef.current = order._id;
+    }
   };
 
   return (
@@ -161,13 +189,6 @@ const AdminOrders: React.FC = () => {
           </select>
         </div>
 
-        <div className="admin-orders__chips">
-          {ALL_STATUS_OPTIONS.map((option) => (
-            <span key={option.value} className="admin-orders__chip">
-              {option.label}: <b>{summary[option.value] || 0}</b>
-            </span>
-          ))}
-        </div>
       </section>
 
       {loading ? (
@@ -186,48 +207,116 @@ const AdminOrders: React.FC = () => {
                     <th>Tổng</th>
                     <th>Trạng thái</th>
                     <th>Ngày đặt</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order) => (
-                    <tr
-                      key={order._id}
-                      className={selectedOrder?._id === order._id ? "is-selected" : ""}
-                      onClick={() => {
-                        // Row click: only select/highlight, do NOT open modal
-                        setSelectedOrder(order);
-                        setStatusDraft(order.status);
-                        selectedOrderIdRef.current = order._id;
-                      }}
-                    >
-                      <td>#{order.code}</td>
-                      <td>
-                        <p className="admin-orders__customer-name">
-                          {order.shippingInfo.fullName}
-                        </p>
-                        <span>{order.shippingInfo.phone}</span>
-                      </td>
-                      <td>{formatCurrency(order.totals.grandTotal)}</td>
-                      <td>
-                        <span className={`admin-orders__status-badge admin-orders__status-badge--${order.status}`}>
-                          {ALL_STATUS_OPTIONS.find((s) => s.value === order.status)?.label}
-                        </span>
-                      </td>
-                      <td>
-                        {new Date(order.createdAt).toLocaleString("vi-VN")}
-                        <button
-                          className="admin-orders__view-btn"
-                          onClick={(e) => {
-                            e.stopPropagation(); // prevent row click
-                            openModal(order);    // only eye opens modal
-                          }}
-                          title="Xem chi tiết đơn"
+                  {orders.map((order) => {
+                    const isSelected = selectedOrder?._id === order._id;
+                    const availableStatuses = getAvailableStatuses(order);
+                    const canDelete = DELETABLE_STATUSES.includes(order.status);
+                    const isUpdating = updatingId === order._id;
+                    const isDeleting = deletingId === order._id;
+
+                    return (
+                      <React.Fragment key={order._id}>
+                        {/* ── Main row ── */}
+                        <tr
+                          className={isSelected ? "is-selected" : ""}
+                          onClick={() => handleRowClick(order)}
                         >
-                          <i className="fa-regular fa-eye" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                          <td>#{order.code}</td>
+                          <td>
+                            <p className="admin-orders__customer-name">
+                              {order.shippingInfo.fullName}
+                            </p>
+                            <span>{order.shippingInfo.phone}</span>
+                          </td>
+                          <td>{formatCurrency(order.totals.grandTotal)}</td>
+                          <td>
+                            <span
+                              className={`admin-orders__status-badge admin-orders__status-badge--${order.status}`}
+                            >
+                              {ALL_STATUS_OPTIONS.find((s) => s.value === order.status)?.label}
+                            </span>
+                          </td>
+                          <td>
+                            {new Date(order.createdAt).toLocaleString("vi-VN")}
+                            {/* Eye → full detail modal */}
+                            <button
+                              className="admin-orders__view-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openModal(order);
+                              }}
+                              title="Xem chi tiết đơn"
+                            >
+                              <i className="fa-regular fa-eye" />
+                            </button>
+                          </td>
+                          {/* Delete column */}
+                          <td onClick={(e) => e.stopPropagation()}>
+                            {canDelete && (
+                              <button
+                                className="admin-orders__delete-btn"
+                                title="Xoá đơn hàng"
+                                disabled={isDeleting}
+                                onClick={() => handleDeleteOrder(order._id)}
+                              >
+                                {isDeleting
+                                  ? <i className="fa-solid fa-spinner fa-spin" />
+                                  : <i className="fa-regular fa-trash-can" />}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+
+                        {/* ── Inline status-update bar (row click) ── */}
+                        {isSelected && availableStatuses.length > 0 && (
+                          <tr className="admin-orders__inline-update-row">
+                            <td colSpan={6}>
+                              <div className="admin-orders__inline-update">
+                                <span className="admin-orders__inline-update-label">
+                                  Cập nhật trạng thái:
+                                </span>
+                                <select
+                                  value={statusDraft}
+                                  onChange={(e) =>
+                                    setStatusDraft(e.target.value as OrderStatus)
+                                  }
+                                  disabled={isUpdating}
+                                >
+                                  {ALL_STATUS_OPTIONS.map((option) => (
+                                    <option
+                                      key={option.value}
+                                      value={option.value}
+                                      disabled={
+                                        option.value !== order.status &&
+                                        !availableStatuses.some((s) => s.value === option.value)
+                                      }
+                                    >
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  className="admin-orders__btn-primary admin-orders__inline-update-btn"
+                                  disabled={
+                                    statusDraft === order.status ||
+                                    isUpdating ||
+                                    !availableStatuses.some((s) => s.value === statusDraft)
+                                  }
+                                  onClick={() => handleStatusUpdate(order._id, statusDraft)}
+                                >
+                                  {isUpdating ? "Đang cập nhật..." : "Cập nhật"}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -235,7 +324,7 @@ const AdminOrders: React.FC = () => {
         </div>
       )}
 
-      {/* ── ORDER DETAIL MODAL ── */}
+      {/* ── ORDER DETAIL MODAL (eye icon only) ── */}
       {showModal && selectedOrder && (
         <div className="admin-orders__modal-backdrop" onClick={() => setShowModal(false)}>
           <div className="admin-orders__modal" onClick={(e) => e.stopPropagation()}>
@@ -350,60 +439,18 @@ const AdminOrders: React.FC = () => {
               })()}
             </div>
 
-            {/* Status update */}
-            <div className="admin-orders__details-section">
-              <h4>Trạng thái đơn</h4>
-              <div className="admin-orders__filter-control">
-                <select
-                  value={statusDraft}
-                  onChange={(e) => setStatusDraft(e.target.value as OrderStatus)}
-                  disabled={updatingId === selectedOrder._id}
-                >
-                  {ALL_STATUS_OPTIONS.map((option) => (
-                    <option
-                      key={option.value}
-                      value={option.value}
-                      disabled={
-                        option.value !== selectedOrder.status &&
-                        !getAvailableStatuses(selectedOrder).some((s) => s.value === option.value)
-                      }
-                    >
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Actions */}
+            {/* Modal actions — view only, no status update here */}
             <div className="admin-orders__modal-actions">
               <button className="admin-orders__btn-secondary" onClick={() => setShowModal(false)}>
                 Đóng
               </button>
-              <button
-                className="admin-orders__btn-primary"
-                disabled={
-                  statusDraft === selectedOrder.status ||
-                  updatingId === selectedOrder._id ||
-                  getAvailableStatuses(selectedOrder).length === 0 ||
-                  !getAvailableStatuses(selectedOrder).some((s) => s.value === statusDraft)
-                }
-                onClick={() => {
-                  if (!selectedOrder) return;
-                  handleStatusUpdate(selectedOrder._id, statusDraft);
-                  setShowModal(false);
-                }}
-              >
-                {updatingId === selectedOrder._id ? "Đang cập nhật..." : "Cập nhật"}
-              </button>
             </div>
 
-          </div>{/* end admin-orders__modal */}
+          </div>
         </div>
       )}
-
     </div>
   );
 };
 
-export default AdminOrders; 
+export default AdminOrders;
